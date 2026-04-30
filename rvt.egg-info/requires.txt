@@ -1,0 +1,13 @@
+numpy
+scipy
+einops
+pyrender
+transformers
+omegaconf
+natsort
+cffi
+pandas
+tensorflow
+pyquaternion
+matplotlib
+clip @ git+https://github.com/openai/CLIP.git
