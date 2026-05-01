@@ -18,7 +18,6 @@ rvt:
 depth: 1
 attn_dim: 512
 
-
 ds_rate: 1.0 
 adapter: []
 model: "MVT_Resnet"
