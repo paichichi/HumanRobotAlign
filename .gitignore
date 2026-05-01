@@ -1,1 +1,7 @@
 rvt/runs/
+*.pt
+*.pth
+*.ckpt
+*.zip
+*.tar
+*.tar.gz
