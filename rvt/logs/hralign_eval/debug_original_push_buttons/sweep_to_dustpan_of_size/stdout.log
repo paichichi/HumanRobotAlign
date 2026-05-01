@@ -1,0 +1,35 @@
+MVT Resnet Vars: {'training': True, '_parameters': {}, '_buffers': {}, '_non_persistent_buffers_set': set(), '_backward_pre_hooks': OrderedDict(), '_backward_hooks': OrderedDict(), '_is_full_backward_hook': None, '_forward_hooks': OrderedDict(), '_forward_hooks_with_kwargs': OrderedDict(), '_forward_hooks_always_called': OrderedDict(), '_forward_pre_hooks': OrderedDict(), '_forward_pre_hooks_with_kwargs': OrderedDict(), '_state_dict_hooks': OrderedDict(), '_state_dict_pre_hooks': OrderedDict(), '_load_state_dict_pre_hooks': OrderedDict(), '_load_state_dict_post_hooks': OrderedDict(), '_modules': {}, 'depth': 1, 'img_feat_dim': 3, 'img_size': 220, 'add_proprio': True, 'proprio_dim': 4, 'add_lang': True, 'lang_dim': 512, 'lang_len': 77, 'im_channels': 64, 'img_patch_size': 11, 'final_dim': 64, 'attn_dropout': 0.1, 'decoder_dropout': 0.0, 'self_cross_ver': 1, 'add_corr': True, 'add_pixel_loc': True, 'add_depth': True, 'pe_fix': True, 'attn_dim': 512}
+adapter:[], ds_rate:1.0
+Agent Information
+<rvt.models.rvt_agent.RVTAgent object at 0x7a8101430490>
+Evaluating sweep_to_dustpan_of_size | Episode 0 | Score: 100.0 | Episode Length: 5 | Lang Goal: sweep dirt to the short dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 1 | Score: 100.0 | Episode Length: 5 | Lang Goal: sweep dirt to the short dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 2 | Score: 0.0 | Episode Length: 25 | Lang Goal: sweep dirt to the tall dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 3 | Score: 0.0 | Episode Length: 25 | Lang Goal: sweep dirt to the tall dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 4 | Score: 100.0 | Episode Length: 5 | Lang Goal: sweep dirt to the short dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 5 | Score: 0.0 | Episode Length: 25 | Lang Goal: sweep dirt to the tall dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 6 | Score: 0.0 | Episode Length: 25 | Lang Goal: sweep dirt to the tall dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 7 | Score: 0.0 | Episode Length: 25 | Lang Goal: sweep dirt to the short dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 8 | Score: 100.0 | Episode Length: 5 | Lang Goal: sweep dirt to the short dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 9 | Score: 0.0 | Episode Length: 25 | Lang Goal: sweep dirt to the tall dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 10 | Score: 0.0 | Episode Length: 25 | Lang Goal: sweep dirt to the tall dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 11 | Score: 0.0 | Episode Length: 25 | Lang Goal: sweep dirt to the tall dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 12 | Score: 100.0 | Episode Length: 5 | Lang Goal: sweep dirt to the short dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 13 | Score: 0.0 | Episode Length: 25 | Lang Goal: sweep dirt to the tall dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 14 | Score: 0.0 | Episode Length: 25 | Lang Goal: sweep dirt to the tall dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 15 | Score: 0.0 | Episode Length: 25 | Lang Goal: sweep dirt to the tall dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 16 | Score: 0.0 | Episode Length: 25 | Lang Goal: sweep dirt to the short dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 17 | Score: 0.0 | Episode Length: 25 | Lang Goal: sweep dirt to the tall dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 18 | Score: 0.0 | Episode Length: 25 | Lang Goal: sweep dirt to the tall dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 19 | Score: 100.0 | Episode Length: 5 | Lang Goal: sweep dirt to the short dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 20 | Score: 0.0 | Episode Length: 25 | Lang Goal: sweep dirt to the tall dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 21 | Score: 100.0 | Episode Length: 5 | Lang Goal: sweep dirt to the short dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 22 | Score: 100.0 | Episode Length: 5 | Lang Goal: sweep dirt to the short dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 23 | Score: 0.0 | Episode Length: 25 | Lang Goal: sweep dirt to the tall dustpan
+Evaluating sweep_to_dustpan_of_size | Episode 24 | Score: 0.0 | Episode Length: 25 | Lang Goal: sweep dirt to the tall dustpan
+[Evaluation] Finished sweep_to_dustpan_of_size | Final Score: 32.0
+
+[CoppeliaSim:loadinfo]   done.
+Freeing up some memory
+model runs/UnadaptedR3M2RLBench/model_4.pth, scores [np.float64(32.0)]
+save  {'sweep_to_dustpan_of_size': np.float64(32.0)}

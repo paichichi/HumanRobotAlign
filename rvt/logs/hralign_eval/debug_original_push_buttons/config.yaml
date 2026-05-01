@@ -1,0 +1,11 @@
+run_name: debug_original_push_buttons
+model_folder: runs/UnadaptedR3M2RLBench
+model_name: model_4.pth
+data_root: /home/xli990/paichichi/GitHub/HumanRobotAlign/rvt/runs/data/test
+episodes: 25
+episode_length: 25
+gpu_id: 0
+tasks:
+  - push_buttons
+  - open_drawer
+  - sweep_to_dustpan_of_size

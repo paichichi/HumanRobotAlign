@@ -1,0 +1,35 @@
+MVT Resnet Vars: {'training': True, '_parameters': {}, '_buffers': {}, '_non_persistent_buffers_set': set(), '_backward_pre_hooks': OrderedDict(), '_backward_hooks': OrderedDict(), '_is_full_backward_hook': None, '_forward_hooks': OrderedDict(), '_forward_hooks_with_kwargs': OrderedDict(), '_forward_hooks_always_called': OrderedDict(), '_forward_pre_hooks': OrderedDict(), '_forward_pre_hooks_with_kwargs': OrderedDict(), '_state_dict_hooks': OrderedDict(), '_state_dict_pre_hooks': OrderedDict(), '_load_state_dict_pre_hooks': OrderedDict(), '_load_state_dict_post_hooks': OrderedDict(), '_modules': {}, 'depth': 1, 'img_feat_dim': 3, 'img_size': 220, 'add_proprio': True, 'proprio_dim': 4, 'add_lang': True, 'lang_dim': 512, 'lang_len': 77, 'im_channels': 64, 'img_patch_size': 11, 'final_dim': 64, 'attn_dropout': 0.1, 'decoder_dropout': 0.0, 'self_cross_ver': 1, 'add_corr': True, 'add_pixel_loc': True, 'add_depth': True, 'pe_fix': True, 'attn_dim': 512}
+adapter:[], ds_rate:1.0
+Agent Information
+<rvt.models.rvt_agent.RVTAgent object at 0x72509b725e50>
+Evaluating push_buttons | Episode 0 | Score: 100.0 | Episode Length: 6 | Lang Goal: push the maroon button, then push the green button, then push the navy button
+Evaluating push_buttons | Episode 1 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
+Evaluating push_buttons | Episode 2 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
+Evaluating push_buttons | Episode 3 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
+Evaluating push_buttons | Episode 4 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
+Evaluating push_buttons | Episode 5 | Score: 100.0 | Episode Length: 4 | Lang Goal: push the maroon button, then push the blue button
+Evaluating push_buttons | Episode 6 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
+Evaluating push_buttons | Episode 7 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
+Evaluating push_buttons | Episode 8 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
+Evaluating push_buttons | Episode 9 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
+Evaluating push_buttons | Episode 10 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
+Evaluating push_buttons | Episode 11 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
+Evaluating push_buttons | Episode 12 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
+Evaluating push_buttons | Episode 13 | Score: 100.0 | Episode Length: 4 | Lang Goal: push the maroon button, then push the green button
+Evaluating push_buttons | Episode 14 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
+Evaluating push_buttons | Episode 15 | Score: 100.0 | Episode Length: 6 | Lang Goal: push the maroon button, then push the green button, then push the teal button
+Evaluating push_buttons | Episode 16 | Score: 100.0 | Episode Length: 6 | Lang Goal: push the maroon button, then push the green button, then push the teal button
+Evaluating push_buttons | Episode 17 | Score: 100.0 | Episode Length: 4 | Lang Goal: push the maroon button, then push the blue button
+Evaluating push_buttons | Episode 18 | Score: 100.0 | Episode Length: 6 | Lang Goal: push the maroon button, then push the green button, then push the navy button
+Evaluating push_buttons | Episode 19 | Score: 100.0 | Episode Length: 6 | Lang Goal: push the maroon button, then push the green button, then push the azure button
+Evaluating push_buttons | Episode 20 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
+Evaluating push_buttons | Episode 21 | Score: 100.0 | Episode Length: 10 | Lang Goal: push the maroon button, then push the green button, then push the silver button
+Evaluating push_buttons | Episode 22 | Score: 100.0 | Episode Length: 4 | Lang Goal: push the maroon button, then push the green button
+Evaluating push_buttons | Episode 23 | Score: 100.0 | Episode Length: 6 | Lang Goal: push the maroon button, then push the green button, then push the olive button
+Evaluating push_buttons | Episode 24 | Score: 100.0 | Episode Length: 4 | Lang Goal: push the maroon button, then push the green button
+[Evaluation] Finished push_buttons | Final Score: 100.0
+
+[CoppeliaSim:loadinfo]   done.
+Freeing up some memory
+model runs/UnadaptedR3M2RLBench/model_4.pth, scores [np.float64(100.0)]
+save  {'push_buttons': np.float64(100.0)}

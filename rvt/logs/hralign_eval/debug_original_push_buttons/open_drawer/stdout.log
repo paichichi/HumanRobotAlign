@@ -1,0 +1,35 @@
+MVT Resnet Vars: {'training': True, '_parameters': {}, '_buffers': {}, '_non_persistent_buffers_set': set(), '_backward_pre_hooks': OrderedDict(), '_backward_hooks': OrderedDict(), '_is_full_backward_hook': None, '_forward_hooks': OrderedDict(), '_forward_hooks_with_kwargs': OrderedDict(), '_forward_hooks_always_called': OrderedDict(), '_forward_pre_hooks': OrderedDict(), '_forward_pre_hooks_with_kwargs': OrderedDict(), '_state_dict_hooks': OrderedDict(), '_state_dict_pre_hooks': OrderedDict(), '_load_state_dict_pre_hooks': OrderedDict(), '_load_state_dict_post_hooks': OrderedDict(), '_modules': {}, 'depth': 1, 'img_feat_dim': 3, 'img_size': 220, 'add_proprio': True, 'proprio_dim': 4, 'add_lang': True, 'lang_dim': 512, 'lang_len': 77, 'im_channels': 64, 'img_patch_size': 11, 'final_dim': 64, 'attn_dropout': 0.1, 'decoder_dropout': 0.0, 'self_cross_ver': 1, 'add_corr': True, 'add_pixel_loc': True, 'add_depth': True, 'pe_fix': True, 'attn_dim': 512}
+adapter:[], ds_rate:1.0
+Agent Information
+<rvt.models.rvt_agent.RVTAgent object at 0x726c5a6c85d0>
+Evaluating open_drawer | Episode 0 | Score: 100.0 | Episode Length: 12 | Lang Goal: open the top drawer
+Evaluating open_drawer | Episode 1 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the top drawer
+Evaluating open_drawer | Episode 2 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the middle drawer
+Evaluating open_drawer | Episode 3 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the bottom drawer
+Evaluating open_drawer | Episode 4 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the bottom drawer
+Evaluating open_drawer | Episode 5 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the middle drawer
+Evaluating open_drawer | Episode 6 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the bottom drawer
+Evaluating open_drawer | Episode 7 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the middle drawer
+Evaluating open_drawer | Episode 8 | Score: 0.0 | Episode Length: 25 | Lang Goal: open the bottom drawer
+Evaluating open_drawer | Episode 9 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the top drawer
+Evaluating open_drawer | Episode 10 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the bottom drawer
+Evaluating open_drawer | Episode 11 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the middle drawer
+Evaluating open_drawer | Episode 12 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the bottom drawer
+Evaluating open_drawer | Episode 13 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the middle drawer
+Evaluating open_drawer | Episode 14 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the bottom drawer
+Evaluating open_drawer | Episode 15 | Score: 0.0 | Episode Length: 5 | Lang Goal: open the bottom drawer
+Evaluating open_drawer | Episode 16 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the middle drawer
+Evaluating open_drawer | Episode 17 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the top drawer
+Evaluating open_drawer | Episode 18 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the middle drawer
+Evaluating open_drawer | Episode 19 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the bottom drawer
+Evaluating open_drawer | Episode 20 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the middle drawer
+Evaluating open_drawer | Episode 21 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the top drawer
+Evaluating open_drawer | Episode 22 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the middle drawer
+Evaluating open_drawer | Episode 23 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the middle drawer
+Evaluating open_drawer | Episode 24 | Score: 0.0 | Episode Length: 25 | Lang Goal: open the bottom drawer
+[Evaluation] Finished open_drawer | Final Score: 88.0
+
+[CoppeliaSim:loadinfo]   done.
+Freeing up some memory
+model runs/UnadaptedR3M2RLBench/model_4.pth, scores [np.float64(88.0)]
+save  {'open_drawer': np.float64(88.0)}

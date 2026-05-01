@@ -429,6 +429,7 @@ def _eval(args):
     # skipping evaluated models
     if args.skip:
         from tensorflow.python.summary.summary_iterator import summary_iterator
+        # TensorFlow summary_iterator is lazily imported only when --skip is used.
         """
         to_skip: {
             0: {'light_bulb_in': False, .....}
