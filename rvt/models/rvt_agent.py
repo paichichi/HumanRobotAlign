@@ -288,6 +288,7 @@ class RVTAgent:
         scene_bounds: list = peract_utils.SCENE_BOUNDS,
         cameras: list = peract_utils.CAMERAS,
         stage_two: bool = False,
+        stage_two_mvt_resnet: bool = False,
         rot_ver: int = 0,
         feat_ver: int = 0,
         log_dir="",
@@ -300,10 +301,11 @@ class RVTAgent:
         """
 
         self._network = network
-        if stage_two:
+        if stage_two and not stage_two_mvt_resnet:
             raise NotImplementedError(
-                "RVTAgent stage_two=True is not supported in Phase 1. "
-                "Keep stage_two: false until the RVT-2 two-stage policy path is ported."
+                "RVTAgent stage_two=True is supported only for the experimental "
+                "MVT_Resnet path. Set stage_two_mvt_resnet: true, or keep "
+                "stage_two: false."
             )
         if rot_ver != 0:
             raise NotImplementedError(
@@ -316,6 +318,7 @@ class RVTAgent:
                 "Keep feat_ver: 0 until waypoint-conditioned features are ported."
             )
         self.stage_two = stage_two
+        self.stage_two_mvt_resnet = stage_two_mvt_resnet
         self.rot_ver = rot_ver
         self.feat_ver = feat_ver
         self._num_rotation_classes = num_rotation_classes
@@ -459,7 +462,7 @@ class RVTAgent:
             action_collision_one_hot,
         )
 
-    def get_q(self, out, dims, only_pred=False):
+    def get_q(self, out, dims, only_pred=False, get_q_trans=True):
         """
         :param out: output of mvt
         :param dims: tensor dimensions (bs, nc, h, w)
@@ -472,10 +475,22 @@ class RVTAgent:
         assert isinstance(only_pred, bool)
 
         pts = None
-        # (bs, h*w, nc)
-        q_trans = out["trans"].view(bs, nc, h * w).transpose(1, 2)
-        if not only_pred:
-            q_trans = q_trans.clone()
+        if get_q_trans:
+            # (bs, h*w, nc)
+            q_trans = out["trans"].view(bs, nc, h * w).transpose(1, 2)
+            if not only_pred:
+                q_trans = q_trans.clone()
+
+            if self.stage_two:
+                out = out["mvt2"]
+                q_trans2 = out["trans"].view(bs, nc, h * w).transpose(1, 2)
+                if not only_pred:
+                    q_trans2 = q_trans2.clone()
+                q_trans = torch.cat((q_trans, q_trans2), dim=2)
+        else:
+            q_trans = None
+            if self.stage_two:
+                out = out["mvt2"]
 
         # (bs, 218) 216!
         rot_q = out["feat"].view(bs, -1)[:, 0 : self.num_all_rot]
@@ -600,6 +615,7 @@ class RVTAgent:
             proprio=proprio,
             lang_emb=lang_goal_embs,
             img_aug=img_aug,
+            wpt_local=wpt_local if self._network.training else None,
         )
 
         # print(out.keys())
@@ -776,7 +792,10 @@ class RVTAgent:
             img_aug=0,  # no img augmentation while acting
         )
         _, rot_q, grip_q, collision_q, y_q, _ = self.get_q(
-            out, dims=(bs, nc, h, w), only_pred=True
+            out,
+            dims=(bs, nc, h, w),
+            only_pred=True,
+            get_q_trans=not self.stage_two,
         )
         pred_wpt, pred_rot_quat, pred_grip, pred_coll = self.get_pred(
             out, rot_q, grip_q, collision_q, y_q, rev_trans, dyn_cam_info
@@ -821,7 +840,12 @@ class RVTAgent:
         rev_trans,
         dyn_cam_info,
     ):
-        pred_wpt_local = self._net_mod.get_wpt(out, dyn_cam_info, y_q)
+        pred_wpt_local = self._net_mod.get_wpt(
+            out,
+            dyn_cam_info,
+            y_q,
+            mvt1_or_mvt2=not self.stage_two,
+        )
 
         pred_wpt = []
         for _pred_wpt_local, _rev_trans in zip(pred_wpt_local, rev_trans):
@@ -863,9 +887,22 @@ class RVTAgent:
     ):
         bs, nc, h, w = dims
         wpt_img = self._net_mod.get_pt_loc_on_img(
-            wpt_local.unsqueeze(1), dyn_cam_info=dyn_cam_info, out=None
+            wpt_local.unsqueeze(1),
+            dyn_cam_info=dyn_cam_info,
+            out=None,
+            mvt1_or_mvt2=True,
         )
         assert wpt_img.shape[1] == 1
+        if self.stage_two:
+            wpt_img2 = self._net_mod.get_pt_loc_on_img(
+                wpt_local.unsqueeze(1),
+                dyn_cam_info=dyn_cam_info,
+                out=out,
+                mvt1_or_mvt2=False,
+            )
+            assert wpt_img2.shape[1] == 1
+            wpt_img = torch.cat((wpt_img, wpt_img2), dim=-2)
+            nc = nc * 2
         # (bs, num_img, 2)
         wpt_img = wpt_img.squeeze(1)
 

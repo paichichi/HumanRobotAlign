@@ -34,6 +34,7 @@ _C.pe_fix = True
 # RVT-2-compatible options. Unsupported RVT-2 behavior is guarded in the
 # model wrapper until the corresponding HR-Align/MVT_Resnet path exists.
 _C.stage_two = False
+_C.stage_two_mvt_resnet = False
 _C.rot_ver = 0
 _C.num_rot = 72
 _C.rot_x_y_aug = 2

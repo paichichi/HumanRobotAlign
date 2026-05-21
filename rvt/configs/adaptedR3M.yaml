@@ -23,6 +23,7 @@ adapter: ['late.layer.3.k.1.down.4.g.8']
 model: "MVT_Resnet" 
 output_dim: 512
 stage_two: false
+stage_two_mvt_resnet: false
 rot_ver: 0
 feat_ver: 0
 use_point_renderer: false

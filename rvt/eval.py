@@ -145,6 +145,7 @@ def load_agent(
             mvt_cfg['model']=exp_cfg.model
             mvt_cfg['output_dim']=exp_cfg.output_dim
             mvt_cfg['stage_two']=exp_cfg.stage_two
+            mvt_cfg['stage_two_mvt_resnet']=exp_cfg.stage_two_mvt_resnet
             mvt_cfg['rot_ver']=exp_cfg.rot_ver
             mvt_cfg['rot_x_y_aug']=exp_cfg.rot_x_y_aug
             mvt_cfg['feat_ver']=exp_cfg.feat_ver
@@ -164,6 +165,7 @@ def load_agent(
                 cameras=CAMERAS,
                 log_dir=f"{eval_log_dir}/eval_run",
                 stage_two=exp_cfg.stage_two,
+                stage_two_mvt_resnet=exp_cfg.stage_two_mvt_resnet,
                 rot_ver=exp_cfg.rot_ver,
                 feat_ver=exp_cfg.feat_ver,
                 **exp_cfg.peract,

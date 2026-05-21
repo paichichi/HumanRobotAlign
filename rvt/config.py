@@ -31,6 +31,7 @@ _C.output_dim = 256
 # RVT-2-compatible knobs. Phase 1 keeps these disabled so the existing
 # RVT-1/HR-Align path remains the default behavior.
 _C.stage_two = False
+_C.stage_two_mvt_resnet = False
 _C.rot_ver = 0
 _C.rot_x_y_aug = 2
 _C.feat_ver = 0

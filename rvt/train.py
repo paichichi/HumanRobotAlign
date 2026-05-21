@@ -370,6 +370,7 @@ def experiment(rank, cmd_args, devices, port):
         mvt_cfg['model']=exp_cfg.model
         mvt_cfg['output_dim']=exp_cfg.output_dim
         mvt_cfg['stage_two']=exp_cfg.stage_two
+        mvt_cfg['stage_two_mvt_resnet']=exp_cfg.stage_two_mvt_resnet
         mvt_cfg['rot_ver']=exp_cfg.rot_ver
         mvt_cfg['rot_x_y_aug']=exp_cfg.rot_x_y_aug
         mvt_cfg['feat_ver']=exp_cfg.feat_ver
@@ -394,6 +395,7 @@ def experiment(rank, cmd_args, devices, port):
             log_dir=f"{log_dir}/test_run/",
             cos_dec_max_step=EPOCHS * TRAINING_ITERATIONS,
             stage_two=exp_cfg.stage_two,
+            stage_two_mvt_resnet=exp_cfg.stage_two_mvt_resnet,
             rot_ver=exp_cfg.rot_ver,
             feat_ver=exp_cfg.feat_ver,
             **exp_cfg.peract,

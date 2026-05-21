@@ -49,6 +49,7 @@ class MVT(nn.Module):
         ds_rate=1,
         output_dim=256,
         stage_two=False,
+        stage_two_mvt_resnet=False,
         rot_ver=0,
         num_rot=72,
         rot_x_y_aug=2,
@@ -68,19 +69,20 @@ class MVT(nn.Module):
         """MultiView Transfomer"""
         super().__init__()
 
-        if stage_two:
+        if stage_two and not (model == "MVT_Resnet" and stage_two_mvt_resnet):
             raise NotImplementedError(
-                "stage_two=True is not supported in this HR-Align Phase 1 path. "
-                "Keep stage_two: false until the RVT-2 coarse-to-fine wrapper is ported."
+                "stage_two=True is supported only for the experimental "
+                "MVT_Resnet path. Set stage_two_mvt_resnet: true with "
+                "model: 'MVT_Resnet', or keep stage_two: false."
             )
         if rot_ver != 0:
             raise NotImplementedError(
-                "rot_ver=1 is not supported for MVT_Resnet in Phase 1. "
+                "rot_ver=1 is not supported for MVT_Resnet in Phase 2. "
                 "Keep rot_ver: 0 until feat_x/feat_y/feat_z/feat_ex_rot heads are added."
             )
         if feat_ver != 0:
             raise NotImplementedError(
-                "feat_ver=1 is not supported for MVT_Resnet in Phase 1. "
+                "feat_ver=1 is not supported for MVT_Resnet in Phase 2. "
                 "Keep feat_ver: 0 until waypoint-conditioned feature extraction is added."
             )
         if use_point_renderer:
@@ -98,6 +100,16 @@ class MVT(nn.Module):
                 "rend_three_views=True is not supported in this HR-Align Phase 1 path. "
                 "Keep rend_three_views: false."
             )
+        if norm_corr:
+            raise NotImplementedError(
+                "norm_corr=True is not supported in this HR-Align Phase 2 path. "
+                "Keep norm_corr: false."
+            )
+        if img_aug_2 != 0:
+            raise NotImplementedError(
+                "img_aug_2 is not supported in this HR-Align Phase 2 path. "
+                "Keep img_aug_2: 0.0."
+            )
 
         # creating a dictonary of all the input parameters
         args = copy.deepcopy(locals())
@@ -106,6 +118,7 @@ class MVT(nn.Module):
         
         del args["model"]
         del args["stage_two"]
+        del args["stage_two_mvt_resnet"]
         del args["rot_ver"]
         del args["num_rot"]
         del args["rot_x_y_aug"]
@@ -121,6 +134,12 @@ class MVT(nn.Module):
         del args["st_wpt_loc_aug"]
         del args["st_wpt_loc_inp_no_noise"]
         del args["img_aug_2"]
+
+        self.stage_two = stage_two
+        self.stage_two_mvt_resnet = stage_two_mvt_resnet
+        self.st_sca = st_sca
+        self.st_wpt_loc_aug = st_wpt_loc_aug
+        self.st_wpt_loc_inp_no_noise = st_wpt_loc_inp_no_noise
 
         # for verifying the input
         self.img_feat_dim = img_feat_dim
@@ -147,14 +166,17 @@ class MVT(nn.Module):
         #self.mvt1 = MVTSingle(**args, renderer=self.renderer)
 
         if model=="MVTSingle":
-            self.mvt1 = MVTSingle(**args, renderer=self.renderer)
+            mvt_cls = MVTSingle
         elif model=="MVT_Resnet":
-            self.mvt1 = MVT_Resnet(**args, renderer=self.renderer)
+            mvt_cls = MVT_Resnet
         else:
             raise ValueError(f"Unsupported MVT model: {model}")
 
+        self.mvt1 = mvt_cls(**args, renderer=self.renderer)
+        if self.stage_two:
+            self.mvt2 = mvt_cls(**args, renderer=self.renderer)
 
-    def get_pt_loc_on_img(self, pt, dyn_cam_info, out=None):
+    def get_pt_loc_on_img(self, pt, dyn_cam_info, out=None, mvt1_or_mvt2=True):
         """
         :param pt: point for which location on image is to be found. the point
             shoud be in the same reference frame as wpt_local (see forward()),
@@ -166,22 +188,38 @@ class MVT(nn.Module):
         assert len(pt.shape) == 3
         bs, np, x = pt.shape
         assert x == 3
-        assert out is None
-        out = self.mvt1.get_pt_loc_on_img(pt, dyn_cam_info)
+        assert isinstance(mvt1_or_mvt2, bool)
+        if mvt1_or_mvt2:
+            assert out is None
+            out = self.mvt1.get_pt_loc_on_img(pt, dyn_cam_info)
+        else:
+            assert self.stage_two
+            assert out is not None
+            assert out["wpt_local1"].shape == (bs, 3)
+            pt = self.st_sca * (pt - out["wpt_local1"].unsqueeze(1))
+            pt = pt.view(bs, np, 3)
+            out = self.mvt2.get_pt_loc_on_img(pt, dyn_cam_info)
 
         return out
 
-    def get_wpt(self, out, dyn_cam_info, y_q=None):
+    def get_wpt(self, out, dyn_cam_info, y_q=None, mvt1_or_mvt2=True):
         """
         Estimate the q-values given output from mvt
         :param out: output from mvt
         :param y_q: refer to the definition in mvt_single.get_wpt
         """
-        wpt = self.mvt1.get_wpt(out, dyn_cam_info, y_q)
+        assert isinstance(mvt1_or_mvt2, bool)
+        if mvt1_or_mvt2:
+            wpt = self.mvt1.get_wpt(out, dyn_cam_info, y_q)
+        else:
+            assert self.stage_two
+            wpt = self.mvt2.get_wpt(out["mvt2"], dyn_cam_info, y_q)
+            wpt = out["rev_trans"](wpt)
         return wpt
 
-    def render(self, pc, img_feat, img_aug, dyn_cam_info):
-        mvt = self.mvt1
+    def render(self, pc, img_feat, img_aug, dyn_cam_info, mvt1_or_mvt2=True):
+        assert isinstance(mvt1_or_mvt2, bool)
+        mvt = self.mvt1 if mvt1_or_mvt2 else self.mvt2
 
         with torch.no_grad():
             if dyn_cam_info is None:
@@ -250,10 +288,17 @@ class MVT(nn.Module):
         proprio,
         lang_emb,
         img_aug,
+        wpt_local=None,
+        rot_x_y=None,
     ):
         if not self.training:
             # no img_aug when not training
             assert img_aug == 0
+            assert rot_x_y is None, f"rot_x_y={rot_x_y}"
+        if self.training:
+            if self.stage_two:
+                assert wpt_local is not None, "stage_two training requires wpt_local"
+            assert rot_x_y is None, f"rot_x_y={rot_x_y}"
 
         bs = len(pc)
         assert bs == len(img_feat)
@@ -289,6 +334,11 @@ class MVT(nn.Module):
                 torch.all(lang_emb == 0)
             ), f"Invalid input for lang={lang}"
 
+        if wpt_local is not None:
+            bs5, x6 = wpt_local.shape
+            assert bs == bs5
+            assert x6 == 3, "Does not support wpt_local of shape {wpt_local.shape}"
+
     def forward(
         self,
         pc,
@@ -296,6 +346,8 @@ class MVT(nn.Module):
         proprio=None,
         lang_emb=None,
         img_aug=0,
+        wpt_local=None,
+        rot_x_y=None,
         **kwargs,
     ):
         """
@@ -307,7 +359,7 @@ class MVT(nn.Module):
         :param img_aug: (float) magnitude of augmentation in rgb image
         """
 
-        self.verify_inp(pc, img_feat, proprio, lang_emb, img_aug)
+        self.verify_inp(pc, img_feat, proprio, lang_emb, img_aug, wpt_local, rot_x_y)
         # bs, [Nx, 3], bs, [Nx,3]
         # print("input:",len(pc), pc[0].size(), len(img_feat), img_feat[0].size())
         img = self.render(
@@ -315,9 +367,67 @@ class MVT(nn.Module):
             img_feat,
             img_aug,
             dyn_cam_info=None,
+            mvt1_or_mvt2=True,
         )
         # print("input img:", img.size()) # [B, 5, 10, 220, 220]
-        out = self.mvt1(img=img, proprio=proprio, lang_emb=lang_emb, **kwargs)
+        if self.training:
+            wpt_local_stage_one = wpt_local.clone().detach() if wpt_local is not None else None
+        else:
+            wpt_local_stage_one = wpt_local
+        out = self.mvt1(
+            img=img,
+            proprio=proprio,
+            lang_emb=lang_emb,
+            wpt_local=wpt_local_stage_one,
+            rot_x_y=rot_x_y,
+            **kwargs,
+        )
+        if self.stage_two:
+            with torch.no_grad():
+                if self.training:
+                    wpt_local_stage_one_noisy = mvt_utils.add_uni_noi(
+                        wpt_local_stage_one.clone().detach(), 2 * self.st_wpt_loc_aug
+                    )
+                    pc, rev_trans = mvt_utils.trans_pc(
+                        pc, loc=wpt_local_stage_one_noisy, sca=self.st_sca
+                    )
+                    if self.st_wpt_loc_inp_no_noise:
+                        wpt_local2, _ = mvt_utils.trans_pc(
+                            wpt_local, loc=wpt_local_stage_one_noisy, sca=self.st_sca
+                        )
+                    else:
+                        wpt_local2, _ = mvt_utils.trans_pc(
+                            wpt_local, loc=wpt_local_stage_one, sca=self.st_sca
+                        )
+                else:
+                    wpt_local_stage_one = self.get_wpt(
+                        out, dyn_cam_info=None, y_q=None, mvt1_or_mvt2=True
+                    )
+                    pc, rev_trans = mvt_utils.trans_pc(
+                        pc, loc=wpt_local_stage_one, sca=self.st_sca
+                    )
+                    wpt_local_stage_one_noisy = wpt_local_stage_one
+                    wpt_local2 = None
+
+                img = self.render(
+                    pc,
+                    img_feat,
+                    img_aug,
+                    dyn_cam_info=None,
+                    mvt1_or_mvt2=False,
+                )
+
+            out_mvt2 = self.mvt2(
+                img=img,
+                proprio=proprio,
+                lang_emb=lang_emb,
+                wpt_local=wpt_local2,
+                rot_x_y=rot_x_y,
+                **kwargs,
+            )
+            out["wpt_local1"] = wpt_local_stage_one_noisy
+            out["rev_trans"] = rev_trans
+            out["mvt2"] = out_mvt2
         # dict, ['trans','feat'], [bs,5,220,220], [bs, 220]
         # print("output:",type(out), out.keys(), out['trans'].size(), out['feat'].size())
         # print("vis feat:", out['vis_feat'].size())  ### [bs*5, C, H, W]
