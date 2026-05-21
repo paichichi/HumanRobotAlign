@@ -1,26 +1,3 @@
 task,episode,score,episode_length,lang_goal,message
 push_buttons,0,100.0,6,"push the maroon button, then push the green button, then push the navy button","Evaluating push_buttons | Episode 0 | Score: 100.0 | Episode Length: 6 | Lang Goal: push the maroon button, then push the green button, then push the navy button"
 push_buttons,1,100.0,2,push the maroon button,Evaluating push_buttons | Episode 1 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
-push_buttons,2,100.0,2,push the maroon button,Evaluating push_buttons | Episode 2 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
-push_buttons,3,100.0,2,push the maroon button,Evaluating push_buttons | Episode 3 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
-push_buttons,4,100.0,2,push the maroon button,Evaluating push_buttons | Episode 4 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
-push_buttons,5,100.0,4,"push the maroon button, then push the blue button","Evaluating push_buttons | Episode 5 | Score: 100.0 | Episode Length: 4 | Lang Goal: push the maroon button, then push the blue button"
-push_buttons,6,100.0,2,push the maroon button,Evaluating push_buttons | Episode 6 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
-push_buttons,7,100.0,2,push the maroon button,Evaluating push_buttons | Episode 7 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
-push_buttons,8,100.0,2,push the maroon button,Evaluating push_buttons | Episode 8 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
-push_buttons,9,100.0,2,push the maroon button,Evaluating push_buttons | Episode 9 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
-push_buttons,10,100.0,2,push the maroon button,Evaluating push_buttons | Episode 10 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
-push_buttons,11,100.0,2,push the maroon button,Evaluating push_buttons | Episode 11 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
-push_buttons,12,100.0,2,push the maroon button,Evaluating push_buttons | Episode 12 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
-push_buttons,13,100.0,4,"push the maroon button, then push the green button","Evaluating push_buttons | Episode 13 | Score: 100.0 | Episode Length: 4 | Lang Goal: push the maroon button, then push the green button"
-push_buttons,14,100.0,2,push the maroon button,Evaluating push_buttons | Episode 14 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
-push_buttons,15,100.0,6,"push the maroon button, then push the green button, then push the teal button","Evaluating push_buttons | Episode 15 | Score: 100.0 | Episode Length: 6 | Lang Goal: push the maroon button, then push the green button, then push the teal button"
-push_buttons,16,100.0,6,"push the maroon button, then push the green button, then push the teal button","Evaluating push_buttons | Episode 16 | Score: 100.0 | Episode Length: 6 | Lang Goal: push the maroon button, then push the green button, then push the teal button"
-push_buttons,17,100.0,4,"push the maroon button, then push the blue button","Evaluating push_buttons | Episode 17 | Score: 100.0 | Episode Length: 4 | Lang Goal: push the maroon button, then push the blue button"
-push_buttons,18,100.0,6,"push the maroon button, then push the green button, then push the navy button","Evaluating push_buttons | Episode 18 | Score: 100.0 | Episode Length: 6 | Lang Goal: push the maroon button, then push the green button, then push the navy button"
-push_buttons,19,100.0,6,"push the maroon button, then push the green button, then push the azure button","Evaluating push_buttons | Episode 19 | Score: 100.0 | Episode Length: 6 | Lang Goal: push the maroon button, then push the green button, then push the azure button"
-push_buttons,20,100.0,2,push the maroon button,Evaluating push_buttons | Episode 20 | Score: 100.0 | Episode Length: 2 | Lang Goal: push the maroon button
-push_buttons,21,100.0,10,"push the maroon button, then push the green button, then push the silver button","Evaluating push_buttons | Episode 21 | Score: 100.0 | Episode Length: 10 | Lang Goal: push the maroon button, then push the green button, then push the silver button"
-push_buttons,22,100.0,4,"push the maroon button, then push the green button","Evaluating push_buttons | Episode 22 | Score: 100.0 | Episode Length: 4 | Lang Goal: push the maroon button, then push the green button"
-push_buttons,23,100.0,6,"push the maroon button, then push the green button, then push the olive button","Evaluating push_buttons | Episode 23 | Score: 100.0 | Episode Length: 6 | Lang Goal: push the maroon button, then push the green button, then push the olive button"
-push_buttons,24,100.0,4,"push the maroon button, then push the green button","Evaluating push_buttons | Episode 24 | Score: 100.0 | Episode Length: 4 | Lang Goal: push the maroon button, then push the green button"

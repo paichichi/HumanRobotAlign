@@ -5,3 +5,19 @@ rvt/runs/
 *.zip
 *.tar
 *.tar.gz
+# Python cache
+__pycache__/
+*.pyc
+
+# Runtime logs
+rvt/logs/
+logs/
+runs/
+outputs/
+
+# Large model/checkpoint files
+*.pth
+*.pt
+*.ckpt
+*.tar
+*.zip

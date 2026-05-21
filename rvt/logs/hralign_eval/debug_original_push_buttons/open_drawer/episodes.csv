@@ -1,26 +1,3 @@
 task,episode,score,episode_length,lang_goal,message
-open_drawer,0,100.0,12,open the top drawer,Evaluating open_drawer | Episode 0 | Score: 100.0 | Episode Length: 12 | Lang Goal: open the top drawer
+open_drawer,0,100.0,3,open the top drawer,Evaluating open_drawer | Episode 0 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the top drawer
 open_drawer,1,100.0,3,open the top drawer,Evaluating open_drawer | Episode 1 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the top drawer
-open_drawer,2,100.0,3,open the middle drawer,Evaluating open_drawer | Episode 2 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the middle drawer
-open_drawer,3,100.0,3,open the bottom drawer,Evaluating open_drawer | Episode 3 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the bottom drawer
-open_drawer,4,100.0,3,open the bottom drawer,Evaluating open_drawer | Episode 4 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the bottom drawer
-open_drawer,5,100.0,3,open the middle drawer,Evaluating open_drawer | Episode 5 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the middle drawer
-open_drawer,6,100.0,3,open the bottom drawer,Evaluating open_drawer | Episode 6 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the bottom drawer
-open_drawer,7,100.0,3,open the middle drawer,Evaluating open_drawer | Episode 7 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the middle drawer
-open_drawer,8,0.0,25,open the bottom drawer,Evaluating open_drawer | Episode 8 | Score: 0.0 | Episode Length: 25 | Lang Goal: open the bottom drawer
-open_drawer,9,100.0,3,open the top drawer,Evaluating open_drawer | Episode 9 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the top drawer
-open_drawer,10,100.0,3,open the bottom drawer,Evaluating open_drawer | Episode 10 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the bottom drawer
-open_drawer,11,100.0,3,open the middle drawer,Evaluating open_drawer | Episode 11 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the middle drawer
-open_drawer,12,100.0,3,open the bottom drawer,Evaluating open_drawer | Episode 12 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the bottom drawer
-open_drawer,13,100.0,3,open the middle drawer,Evaluating open_drawer | Episode 13 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the middle drawer
-open_drawer,14,100.0,3,open the bottom drawer,Evaluating open_drawer | Episode 14 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the bottom drawer
-open_drawer,15,0.0,5,open the bottom drawer,Evaluating open_drawer | Episode 15 | Score: 0.0 | Episode Length: 5 | Lang Goal: open the bottom drawer
-open_drawer,16,100.0,3,open the middle drawer,Evaluating open_drawer | Episode 16 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the middle drawer
-open_drawer,17,100.0,3,open the top drawer,Evaluating open_drawer | Episode 17 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the top drawer
-open_drawer,18,100.0,3,open the middle drawer,Evaluating open_drawer | Episode 18 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the middle drawer
-open_drawer,19,100.0,3,open the bottom drawer,Evaluating open_drawer | Episode 19 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the bottom drawer
-open_drawer,20,100.0,3,open the middle drawer,Evaluating open_drawer | Episode 20 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the middle drawer
-open_drawer,21,100.0,3,open the top drawer,Evaluating open_drawer | Episode 21 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the top drawer
-open_drawer,22,100.0,3,open the middle drawer,Evaluating open_drawer | Episode 22 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the middle drawer
-open_drawer,23,100.0,3,open the middle drawer,Evaluating open_drawer | Episode 23 | Score: 100.0 | Episode Length: 3 | Lang Goal: open the middle drawer
-open_drawer,24,0.0,25,open the bottom drawer,Evaluating open_drawer | Episode 24 | Score: 0.0 | Episode Length: 25 | Lang Goal: open the bottom drawer

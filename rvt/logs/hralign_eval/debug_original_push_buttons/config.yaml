@@ -1,8 +1,8 @@
 run_name: debug_original_push_buttons
-model_folder: runs/UnadaptedR3M2RLBench
+model_folder: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/runs/UnadaptedR3M2RLBench
 model_name: model_4.pth
-data_root: /home/xli990/paichichi/GitHub/HumanRobotAlign/rvt/runs/data/test
-episodes: 25
+data_root: /nesi/nobackup/uoa04758/xzha593/datasets/AGNOSTOS/test
+episodes: 2
 episode_length: 25
 gpu_id: 0
 tasks:

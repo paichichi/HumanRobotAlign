@@ -1,8 +1,8 @@
 exp_id: rvt
 tasks: all
-bs: 3
+bs: 4 # 3
 num_workers: 4
-epochs: 15
+epochs: 5
 sample_distribution_mode: task_uniform
 peract:
   lr: 5e-5
@@ -23,7 +23,7 @@ adapter: ['late.layer.3.k.1.down.4.g.8']
 model: "MVT_Resnet" 
 output_dim: 512
 
-pretrain: ../pretrains/AdaptedR3M.pyth
-overwriter_log_dir: runs/AdaptedR3M2RLBench_yours
+pretrain: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/pretrains/AdaptedR3M.pyth
+overwriter_log_dir: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/runs/adaptedR3M2RLBench_reproduced_first_try
 
 ### python train.py --exp_cfg_path configs/adaptedR3M.yaml --device 0,1,2,3,4,5,6,7

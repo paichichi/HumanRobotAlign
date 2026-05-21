@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd /home/xli990/paichichi/GitHub/HumanRobotAlign/rvt
+cd /nesi/project/uoa04758/xzha593/GitHub/HumanRobotAlign/rvt
+
 
 # =====================
 # Config
 # =====================
-MODEL_FOLDER="runs/UnadaptedR3M2RLBench"
+MODEL_FOLDER="/nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/runs/UnadaptedR3M2RLBench"
 MODEL_NAME="model_4.pth"
-DATA_ROOT="/home/xli990/paichichi/GitHub/HumanRobotAlign/rvt/runs/data/test"
+DATA_ROOT="/nesi/nobackup/uoa04758/xzha593/datasets/AGNOSTOS/test"
 
-EPISODES=25
+EPISODES=2 # 25 in original paper, set to 1 for quick debugging
 EPISODE_LENGTH=25
 GPU_ID=0
 
@@ -52,21 +53,38 @@ tasks=(
 # =====================
 # Environment
 # =====================
-export COPPELIASIM_ROOT=/home/xli990/software/CoppeliaSim
-export LD_LIBRARY_PATH=$COPPELIASIM_ROOT:$COPPELIASIM_ROOT/lib:$CONDA_PREFIX/lib:/usr/lib/nvidia
+source /nesi/project/uoa04758/xzha593/envs/activate_hralign.sh
+
+export PROJECT=/nesi/project/uoa04758/xzha593
+export SCRATCH=/nesi/nobackup/uoa04758/xzha593
+
+export COPPELIASIM_ROOT=$PROJECT/software/CoppeliaSim
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$COPPELIASIM_ROOT:$COPPELIASIM_ROOT/programming/remoteApiBindings/lib/lib/Ubuntu20_04:${LD_LIBRARY_PATH:-}
+
 export QT_QPA_PLATFORM_PLUGIN_PATH=$COPPELIASIM_ROOT
-export QT_PLUGIN_PATH=$COPPELIASIM_ROOT
-export QT_QPA_PLATFORM=xcb
+unset QT_QPA_PLATFORM
+unset QT_PLUGIN_PATH
+
+export XDG_RUNTIME_DIR=$SCRATCH/tmp/xdg_runtime
+mkdir -p "$XDG_RUNTIME_DIR"
+chmod 700 "$XDG_RUNTIME_DIR"
 
 export LIBGL_ALWAYS_SOFTWARE=1
 export GALLIUM_DRIVER=llvmpipe
 export MESA_GL_VERSION_OVERRIDE=3.3
 
-export PYTHONFAULTHANDLER=1
+export PYTHONFAULTHANDLER=0
 export OMP_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
+
+# echo "Using python: $(which python)"
+# echo "COPPELIASIM_ROOT=$COPPELIASIM_ROOT"
+# echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+# echo "QT_QPA_PLATFORM_PLUGIN_PATH=$QT_QPA_PLATFORM_PLUGIN_PATH"
+# echo "QT_QPA_PLATFORM=${QT_QPA_PLATFORM:-}"
+# echo "QT_PLUGIN_PATH=${QT_PLUGIN_PATH:-}"
 
 mkdir -p "$LOG_ROOT"
 
