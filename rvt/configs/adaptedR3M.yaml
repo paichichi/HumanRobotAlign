@@ -22,6 +22,11 @@ ds_rate: 1.0
 adapter: ['late.layer.3.k.1.down.4.g.8']
 model: "MVT_Resnet" 
 output_dim: 512
+stage_two: false
+rot_ver: 0
+feat_ver: 0
+use_point_renderer: false
+cvx_up: false
 
 pretrain: ../pretrains/AdaptedR3M.pyth
 overwriter_log_dir: runs/AdaptedR3M2RLBench_yours

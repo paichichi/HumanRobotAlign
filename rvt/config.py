@@ -28,6 +28,15 @@ _C.adapter = []
 _C.model = "MVTSingle"
 _C.output_dim = 256
 
+# RVT-2-compatible knobs. Phase 1 keeps these disabled so the existing
+# RVT-1/HR-Align path remains the default behavior.
+_C.stage_two = False
+_C.rot_ver = 0
+_C.rot_x_y_aug = 2
+_C.feat_ver = 0
+_C.use_point_renderer = False
+_C.cvx_up = False
+
 _C.overwriter_log_dir = "runs/test"
 _C.pretrain=None
 

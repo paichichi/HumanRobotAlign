@@ -48,9 +48,56 @@ class MVT(nn.Module):
         adapter=[],
         ds_rate=1,
         output_dim=256,
+        stage_two=False,
+        rot_ver=0,
+        num_rot=72,
+        rot_x_y_aug=2,
+        feat_ver=0,
+        use_point_renderer=False,
+        cvx_up=False,
+        rend_three_views=False,
+        norm_corr=False,
+        inp_pre_pro=True,
+        inp_pre_con=True,
+        wpt_img_aug=0.01,
+        st_sca=4,
+        st_wpt_loc_aug=0.05,
+        st_wpt_loc_inp_no_noise=False,
+        img_aug_2=0.0,
     ):
         """MultiView Transfomer"""
         super().__init__()
+
+        if stage_two:
+            raise NotImplementedError(
+                "stage_two=True is not supported in this HR-Align Phase 1 path. "
+                "Keep stage_two: false until the RVT-2 coarse-to-fine wrapper is ported."
+            )
+        if rot_ver != 0:
+            raise NotImplementedError(
+                "rot_ver=1 is not supported for MVT_Resnet in Phase 1. "
+                "Keep rot_ver: 0 until feat_x/feat_y/feat_z/feat_ex_rot heads are added."
+            )
+        if feat_ver != 0:
+            raise NotImplementedError(
+                "feat_ver=1 is not supported for MVT_Resnet in Phase 1. "
+                "Keep feat_ver: 0 until waypoint-conditioned feature extraction is added."
+            )
+        if use_point_renderer:
+            raise NotImplementedError(
+                "use_point_renderer=True is not supported in this HR-Align Phase 1 path. "
+                "Keep use_point_renderer: false."
+            )
+        if cvx_up:
+            raise NotImplementedError(
+                "cvx_up=True is not supported in this HR-Align Phase 1 path. "
+                "Keep cvx_up: false."
+            )
+        if rend_three_views:
+            raise NotImplementedError(
+                "rend_three_views=True is not supported in this HR-Align Phase 1 path. "
+                "Keep rend_three_views: false."
+            )
 
         # creating a dictonary of all the input parameters
         args = copy.deepcopy(locals())
@@ -58,6 +105,22 @@ class MVT(nn.Module):
         del args["__class__"]
         
         del args["model"]
+        del args["stage_two"]
+        del args["rot_ver"]
+        del args["num_rot"]
+        del args["rot_x_y_aug"]
+        del args["feat_ver"]
+        del args["use_point_renderer"]
+        del args["cvx_up"]
+        del args["rend_three_views"]
+        del args["norm_corr"]
+        del args["inp_pre_pro"]
+        del args["inp_pre_con"]
+        del args["wpt_img_aug"]
+        del args["st_sca"]
+        del args["st_wpt_loc_aug"]
+        del args["st_wpt_loc_inp_no_noise"]
+        del args["img_aug_2"]
 
         # for verifying the input
         self.img_feat_dim = img_feat_dim
@@ -88,7 +151,7 @@ class MVT(nn.Module):
         elif model=="MVT_Resnet":
             self.mvt1 = MVT_Resnet(**args, renderer=self.renderer)
         else:
-            pass
+            raise ValueError(f"Unsupported MVT model: {model}")
 
 
     def get_pt_loc_on_img(self, pt, dyn_cam_info, out=None):

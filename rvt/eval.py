@@ -144,6 +144,12 @@ def load_agent(
             mvt_cfg['adapter']=exp_cfg.adapter
             mvt_cfg['model']=exp_cfg.model
             mvt_cfg['output_dim']=exp_cfg.output_dim
+            mvt_cfg['stage_two']=exp_cfg.stage_two
+            mvt_cfg['rot_ver']=exp_cfg.rot_ver
+            mvt_cfg['rot_x_y_aug']=exp_cfg.rot_x_y_aug
+            mvt_cfg['feat_ver']=exp_cfg.feat_ver
+            mvt_cfg['use_point_renderer']=exp_cfg.use_point_renderer
+            mvt_cfg['cvx_up']=exp_cfg.cvx_up
             
             rvt = MVT(
                 renderer_device=device,
@@ -157,6 +163,9 @@ def load_agent(
                 scene_bounds=SCENE_BOUNDS,
                 cameras=CAMERAS,
                 log_dir=f"{eval_log_dir}/eval_run",
+                stage_two=exp_cfg.stage_two,
+                rot_ver=exp_cfg.rot_ver,
+                feat_ver=exp_cfg.feat_ver,
                 **exp_cfg.peract,
                 **exp_cfg.rvt,
             )

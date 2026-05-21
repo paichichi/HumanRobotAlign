@@ -58,6 +58,11 @@ class MVT_Resnet(nn.Module):
         adapter=[],
         ds_rate=1,
         output_dim=256,
+        rot_ver=0,
+        feat_ver=0,
+        cvx_up=False,
+        use_point_renderer=False,
+        **kwargs,
     ):
         """MultiView Transfomer
 
@@ -92,6 +97,24 @@ class MVT_Resnet(nn.Module):
         """
 
         super().__init__()
+        if kwargs:
+            raise TypeError(f"Unsupported MVT_Resnet options: {sorted(kwargs)}")
+        if rot_ver != 0:
+            raise NotImplementedError(
+                "MVT_Resnet currently supports only rot_ver=0. "
+                "rot_ver=1 requires feat_x/feat_y/feat_z/feat_ex_rot outputs."
+            )
+        if feat_ver != 0:
+            raise NotImplementedError(
+                "MVT_Resnet currently supports only feat_ver=0. "
+                "feat_ver=1 requires waypoint-conditioned feature extraction."
+            )
+        if cvx_up:
+            raise NotImplementedError("MVT_Resnet does not support cvx_up=True yet.")
+        if use_point_renderer:
+            raise NotImplementedError(
+                "MVT_Resnet does not support use_point_renderer=True yet."
+            )
         self.depth = depth
         self.img_feat_dim = img_feat_dim
         self.img_size = img_size
@@ -541,4 +564,3 @@ class MVT_Resnet(nn.Module):
         """
         print("Freeing up some memory")
         self.renderer.free_mem()
-

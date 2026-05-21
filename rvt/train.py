@@ -369,6 +369,12 @@ def experiment(rank, cmd_args, devices, port):
         mvt_cfg['adapter']=exp_cfg.adapter 
         mvt_cfg['model']=exp_cfg.model
         mvt_cfg['output_dim']=exp_cfg.output_dim
+        mvt_cfg['stage_two']=exp_cfg.stage_two
+        mvt_cfg['rot_ver']=exp_cfg.rot_ver
+        mvt_cfg['rot_x_y_aug']=exp_cfg.rot_x_y_aug
+        mvt_cfg['feat_ver']=exp_cfg.feat_ver
+        mvt_cfg['use_point_renderer']=exp_cfg.use_point_renderer
+        mvt_cfg['cvx_up']=exp_cfg.cvx_up
         rvt = MVT(
             renderer_device=device,
             **mvt_cfg,
@@ -387,6 +393,9 @@ def experiment(rank, cmd_args, devices, port):
             cameras=CAMERAS,
             log_dir=f"{log_dir}/test_run/",
             cos_dec_max_step=EPOCHS * TRAINING_ITERATIONS,
+            stage_two=exp_cfg.stage_two,
+            rot_ver=exp_cfg.rot_ver,
+            feat_ver=exp_cfg.feat_ver,
             **exp_cfg.peract,
             **exp_cfg.rvt,
         )
@@ -464,4 +473,3 @@ if __name__ == "__main__":
 
     port = (random.randint(0, 3000) % 3000) + 27000
     mp.spawn(experiment, args=(cmd_args, devices, port), nprocs=len(devices), join=True)
-

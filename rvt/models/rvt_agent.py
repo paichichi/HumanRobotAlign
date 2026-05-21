@@ -287,6 +287,9 @@ class RVTAgent:
         add_rgc_loss: bool = False,
         scene_bounds: list = peract_utils.SCENE_BOUNDS,
         cameras: list = peract_utils.CAMERAS,
+        stage_two: bool = False,
+        rot_ver: int = 0,
+        feat_ver: int = 0,
         log_dir="",
     ):
         """
@@ -297,6 +300,24 @@ class RVTAgent:
         """
 
         self._network = network
+        if stage_two:
+            raise NotImplementedError(
+                "RVTAgent stage_two=True is not supported in Phase 1. "
+                "Keep stage_two: false until the RVT-2 two-stage policy path is ported."
+            )
+        if rot_ver != 0:
+            raise NotImplementedError(
+                "RVTAgent rot_ver=1 is not supported in Phase 1. "
+                "Keep rot_ver: 0 until MVT_Resnet emits RVT-2 rotation features."
+            )
+        if feat_ver != 0:
+            raise NotImplementedError(
+                "RVTAgent feat_ver=1 is not supported in Phase 1. "
+                "Keep feat_ver: 0 until waypoint-conditioned features are ported."
+            )
+        self.stage_two = stage_two
+        self.rot_ver = rot_ver
+        self.feat_ver = feat_ver
         self._num_rotation_classes = num_rotation_classes
         self._rotation_resolution = 360 / self._num_rotation_classes
         self._lr = lr
