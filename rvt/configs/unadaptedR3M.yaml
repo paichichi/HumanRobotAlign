@@ -25,11 +25,10 @@ output_dim: 512
 stage_two: False
 rot_ver: 0
 feat_ver: 0
-use_point_renderer: False
 cvx_up: False
 
-pretrain: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/pretrains/UnadaptedR3M.pt
-overwriter_log_dir: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/runs/UnadaptedR3M2RLBench_reproduced_second_try
+pretrain: /home/paichichi/data/pretrain/UnadaptedR3M.pt
+overwriter_log_dir: /home/paichichi/data/HRAlign/runs/UnadaptedR3M2RLBench_rvt2
 
 ### python train.py --exp_cfg_path configs/unadaptedR3M.yaml --device 0,1,2,3,4,5,6,7
 ### python train.py --exp_cfg_path configs/rvt2.yaml --mvt_cfg_path mvt/configs/rvt2.yaml --device 0,1,2,3,4,5,6,7 #official rvt2 config, for reference

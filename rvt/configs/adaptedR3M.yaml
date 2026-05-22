@@ -25,7 +25,6 @@ output_dim: 512
 stage_two: False
 rot_ver: 0
 feat_ver: 0
-use_point_renderer: False
 cvx_up: False
 
 pretrain: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/pretrains/AdaptedR3M.pyth

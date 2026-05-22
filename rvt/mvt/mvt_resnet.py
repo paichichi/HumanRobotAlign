@@ -113,10 +113,6 @@ class MVT_Resnet(nn.Module):
             )
         if cvx_up:
             raise NotImplementedError("MVT_Resnet does not support cvx_up=True yet.")
-        if use_point_renderer:
-            raise NotImplementedError(
-                "MVT_Resnet does not support use_point_renderer=True yet."
-            )
         self.depth = depth
         self.img_feat_dim = img_feat_dim
         self.img_size = img_size
@@ -136,6 +132,7 @@ class MVT_Resnet(nn.Module):
         self.add_depth = add_depth
         self.pe_fix = pe_fix
         self.attn_dim = attn_dim
+        self.use_point_renderer = use_point_renderer
         self.pretrain_path = pretrain_path
         self.no_feat = no_feat
 

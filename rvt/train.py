@@ -346,13 +346,13 @@ def experiment(rank, cmd_args, devices, port):
 
     # Things to change
     BATCH_SIZE_TRAIN = exp_cfg.bs
-    NUM_TRAIN = 100
+    NUM_TRAIN = 100 # setting to 200 match with X-ICM
     # DATA_FOLDER = "put_your_RLBench_data_path_in_here"
     # to match peract, iterations per epoch
     TRAINING_ITERATIONS = int(10000 // (exp_cfg.bs * len(devices) / 16))
     EPOCHS = exp_cfg.epochs
-    TRAIN_REPLAY_STORAGE_DIR = "RLBench/rvt_replay"
-    TEST_REPLAY_STORAGE_DIR = "replay/replay_val"
+    TRAIN_REPLAY_STORAGE_DIR = "/home/paichichi/data/rvt/replay"
+    TEST_REPLAY_STORAGE_DIR = ""
     log_dir = get_logdir(cmd_args, exp_cfg)
     tasks = get_tasks(exp_cfg)
     print("Training on {} tasks: {}".format(len(tasks), tasks))

@@ -84,6 +84,12 @@ class MVT(nn.Module):
         """
         super().__init__()
 
+        if rend_three_views and not use_point_renderer:
+            raise NotImplementedError(
+                "rend_three_views=True requires use_point_renderer=True. "
+                "The fallback mvt.renderer.BoxRenderer asserts three_views=False."
+            )
+
         self.use_point_renderer = use_point_renderer
         if self.use_point_renderer:
             from point_renderer.rvt_renderer import RVTBoxRenderer as BoxRenderer
@@ -159,11 +165,6 @@ class MVT(nn.Module):
                 raise NotImplementedError(
                     "MVT_Resnet does not support cvx_up=True yet. "
                     "Set cvx_up: False in the HR-Align exp config."
-                )
-            if use_point_renderer:
-                raise NotImplementedError(
-                    "MVT_Resnet does not support use_point_renderer=True yet. "
-                    "Set use_point_renderer: False in the HR-Align exp config."
                 )
             resnet_args = copy.deepcopy(args)
             for key in (
