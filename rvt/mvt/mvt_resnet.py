@@ -400,12 +400,16 @@ class MVT_Resnet(nn.Module):
         img,
         proprio=None,
         lang_emb=None,
+        wpt_local=None,
+        rot_x_y=None,
         **kwargs,
     ):
         """
         :param img: tensor of shape (bs, num_img, img_feat_dim, h, w)
         :param proprio: tensor of shape (bs, priprio_dim)
         :param lang_emb: tensor of shape (bs, lang_len, lang_dim)
+        :param wpt_local: gt waypoint location, used by feat_ver=1 while training
+        :param rot_x_y: gt x/y rotation classes, used by rot_ver=1 while training
         :param img_aug: (float) magnitude of augmentation in rgb image
         """
 
