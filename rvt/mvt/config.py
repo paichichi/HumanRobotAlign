@@ -27,34 +27,26 @@ _C.img_patch_size = 11
 _C.final_dim = 64
 _C.self_cross_ver = 1
 _C.add_corr = True
+_C.norm_corr = False
 _C.add_pixel_loc = True
 _C.add_depth = True
-_C.pe_fix = True
-
-# RVT-2-compatible options. Unsupported RVT-2 behavior is guarded in the
-# model wrapper until the corresponding HR-Align/MVT_Resnet path exists.
-_C.stage_two = False
-_C.stage_two_mvt_resnet = False
-_C.rot_ver = 0
-_C.num_rot = 72
-_C.rot_x_y_aug = 2
-_C.feat_ver = 0
-_C.use_point_renderer = False
-_C.cvx_up = False
 _C.rend_three_views = False
-_C.norm_corr = False
+_C.use_point_renderer = False
+_C.pe_fix = True
+_C.feat_ver = 0
+_C.wpt_img_aug = 0.01
 _C.inp_pre_pro = True
 _C.inp_pre_con = True
-_C.wpt_img_aug = 0.01
+_C.cvx_up = False
+_C.xops = False
+_C.rot_ver = 0
+_C.num_rot = 72
+_C.stage_two = False
 _C.st_sca = 4
 _C.st_wpt_loc_aug = 0.05
 _C.st_wpt_loc_inp_no_noise = False
 _C.img_aug_2 = 0.0
 
-_C.ds_rate = 0.0
-_C.adapter = []
-_C.model = "MVTSingle" 
-_C.output_dim = 256
 
 def get_cfg_defaults():
     """Get a yacs CfgNode object with default values for my_project."""

@@ -6,21 +6,13 @@ import copy
 import torch
 
 from torch import nn
+from torch.cuda.amp import autocast
 
 import rvt.mvt.utils as mvt_utils
 
 from rvt.mvt.mvt_single import MVT as MVTSingle
 from rvt.mvt.config import get_cfg_defaults
-# from rvt.mvt.renderer import BoxRenderer
-try:
-    from rvt.mvt.renderer import BoxRenderer
-except ModuleNotFoundError as e:
-    if e.name == "pytorch3d":
-        BoxRenderer = None
-    else:
-        raise
-
-from rvt.mvt.mvt_resnet import *
+from rvt.mvt.renderer import BoxRenderer
 
 
 class MVT(nn.Module):
@@ -47,108 +39,71 @@ class MVT(nn.Module):
         final_dim,
         self_cross_ver,
         add_corr,
+        norm_corr,
         add_pixel_loc,
         add_depth,
+        rend_three_views,
+        use_point_renderer,
         pe_fix,
+        feat_ver,
+        wpt_img_aug,
+        inp_pre_pro,
+        inp_pre_con,
+        cvx_up,
+        xops,
+        rot_ver,
+        num_rot,
+        stage_two,
+        st_sca,
+        st_wpt_loc_aug,
+        st_wpt_loc_inp_no_noise,
+        img_aug_2,
         renderer_device="cuda:0",
-        model="MVTSingle",
-        adapter=[],
-        ds_rate=1,
-        output_dim=256,
-        stage_two=False,
-        stage_two_mvt_resnet=False,
-        rot_ver=0,
-        num_rot=72,
-        rot_x_y_aug=2,
-        feat_ver=0,
-        use_point_renderer=False,
-        cvx_up=False,
-        rend_three_views=False,
-        norm_corr=False,
-        inp_pre_pro=True,
-        inp_pre_con=True,
-        wpt_img_aug=0.01,
-        st_sca=4,
-        st_wpt_loc_aug=0.05,
-        st_wpt_loc_inp_no_noise=False,
-        img_aug_2=0.0,
     ):
-        """MultiView Transfomer"""
+        """MultiView Transfomer
+        :param stage_two: whether or not there are two stages
+        :param st_sca: scaling of the pc in the second stage
+        :param st_wpt_loc_aug: how much noise is to be added to wpt_local when
+            transforming the pc in the second stage while training. This is
+            expressed as a percentage of total pc size which is 2.
+        :param st_wpt_loc_inp_no_noise: whether or not to add any noise to the
+            wpt_local location which is fed to stage_two. This wpt_local
+            location is used to extract features for rotation prediction
+            currently. Other use cases might also arise later on. Even if
+            st_wpt_loc_aug is True, this will compensate for that if set to
+            True.
+        :param img_aug_2: similar to img_aug in rvt repo but applied only to
+            point feat and not the whole point cloud
+        """
         super().__init__()
 
-        if stage_two and not (model == "MVT_Resnet" and stage_two_mvt_resnet):
-            raise NotImplementedError(
-                "stage_two=True is supported only for the experimental "
-                "MVT_Resnet path. Set stage_two_mvt_resnet: true with "
-                "model: 'MVT_Resnet', or keep stage_two: false."
-            )
-        if rot_ver != 0:
-            raise NotImplementedError(
-                "rot_ver=1 is not supported for MVT_Resnet in Phase 2. "
-                "Keep rot_ver: 0 until feat_x/feat_y/feat_z/feat_ex_rot heads are added."
-            )
-        if feat_ver != 0:
-            raise NotImplementedError(
-                "feat_ver=1 is not supported for MVT_Resnet in Phase 2. "
-                "Keep feat_ver: 0 until waypoint-conditioned feature extraction is added."
-            )
-        if use_point_renderer:
-            raise NotImplementedError(
-                "use_point_renderer=True is not supported in this HR-Align Phase 1 path. "
-                "Keep use_point_renderer: false."
-            )
-        if cvx_up:
-            raise NotImplementedError(
-                "cvx_up=True is not supported in this HR-Align Phase 1 path. "
-                "Keep cvx_up: false."
-            )
-        if rend_three_views:
-            raise NotImplementedError(
-                "rend_three_views=True is not supported in this HR-Align Phase 1 path. "
-                "Keep rend_three_views: false."
-            )
-        if norm_corr:
-            raise NotImplementedError(
-                "norm_corr=True is not supported in this HR-Align Phase 2 path. "
-                "Keep norm_corr: false."
-            )
-        if img_aug_2 != 0:
-            raise NotImplementedError(
-                "img_aug_2 is not supported in this HR-Align Phase 2 path. "
-                "Keep img_aug_2: 0.0."
-            )
+        self.use_point_renderer = use_point_renderer
+        if self.use_point_renderer:
+            from point_renderer.rvt_renderer import RVTBoxRenderer as BoxRenderer
+        else:
+            from mvt.renderer import BoxRenderer
+        global BoxRenderer
 
         # creating a dictonary of all the input parameters
         args = copy.deepcopy(locals())
         del args["self"]
         del args["__class__"]
-        
-        del args["model"]
         del args["stage_two"]
-        del args["stage_two_mvt_resnet"]
-        del args["rot_ver"]
-        del args["num_rot"]
-        del args["rot_x_y_aug"]
-        del args["feat_ver"]
-        del args["use_point_renderer"]
-        del args["cvx_up"]
-        del args["rend_three_views"]
-        del args["norm_corr"]
-        del args["inp_pre_pro"]
-        del args["inp_pre_con"]
-        del args["wpt_img_aug"]
         del args["st_sca"]
         del args["st_wpt_loc_aug"]
         del args["st_wpt_loc_inp_no_noise"]
         del args["img_aug_2"]
 
+        self.rot_ver = rot_ver
+        self.num_rot = num_rot
         self.stage_two = stage_two
-        self.stage_two_mvt_resnet = stage_two_mvt_resnet
         self.st_sca = st_sca
         self.st_wpt_loc_aug = st_wpt_loc_aug
         self.st_wpt_loc_inp_no_noise = st_wpt_loc_inp_no_noise
+        self.img_aug_2 = img_aug_2
 
         # for verifying the input
+        self.feat_ver = feat_ver
         self.img_feat_dim = img_feat_dim
         self.add_proprio = add_proprio
         self.proprio_dim = proprio_dim
@@ -163,27 +118,28 @@ class MVT(nn.Module):
         self.renderer = BoxRenderer(
             device=renderer_device,
             img_size=(img_size, img_size),
+            three_views=rend_three_views,
             with_depth=add_depth,
         )
         self.num_img = self.renderer.num_img
         self.proprio_dim = proprio_dim
         self.img_size = img_size
 
-
-        #self.mvt1 = MVTSingle(**args, renderer=self.renderer)
-
+        # self.mvt1 = MVTSingle(
+        #     **args,
+        #     renderer=self.renderer,
+        #     no_feat=self.stage_two,
+        # )
         if model=="MVTSingle":
-            mvt_cls = MVTSingle
+            self.mvt1 = MVTSingle(**args, renderer=self.renderer, no_feat=self.stage_two,)
         elif model=="MVT_Resnet":
-            mvt_cls = MVT_Resnet
+            self.mvt1 = MVT_Resnet(**args, renderer=self.renderer, no_feat=self.stage_two,)
         else:
-            raise ValueError(f"Unsupported MVT model: {model}")
-
-        self.mvt1 = mvt_cls(**args, renderer=self.renderer)
+            pass
         if self.stage_two:
-            self.mvt2 = mvt_cls(**args, renderer=self.renderer)
+            self.mvt2 = MVTSingle(**args, renderer=self.renderer) 
 
-    def get_pt_loc_on_img(self, pt, dyn_cam_info, out=None, mvt1_or_mvt2=True):
+    def get_pt_loc_on_img(self, pt, mvt1_or_mvt2, dyn_cam_info, out=None):
         """
         :param pt: point for which location on image is to be found. the point
             shoud be in the same reference frame as wpt_local (see forward()),
@@ -193,8 +149,9 @@ class MVT(nn.Module):
             before estimating the location in the image
         """
         assert len(pt.shape) == 3
-        bs, np, x = pt.shape
+        bs, _np, x = pt.shape
         assert x == 3
+
         assert isinstance(mvt1_or_mvt2, bool)
         if mvt1_or_mvt2:
             assert out is None
@@ -202,14 +159,14 @@ class MVT(nn.Module):
         else:
             assert self.stage_two
             assert out is not None
-            assert out["wpt_local1"].shape == (bs, 3)
-            pt = self.st_sca * (pt - out["wpt_local1"].unsqueeze(1))
-            pt = pt.view(bs, np, 3)
+            assert out['wpt_local1'].shape == (bs, 3)
+            pt, _ = mvt_utils.trans_pc(pt, loc=out["wpt_local1"], sca=self.st_sca)
+            pt = pt.view(bs, _np, 3)
             out = self.mvt2.get_pt_loc_on_img(pt, dyn_cam_info)
 
         return out
 
-    def get_wpt(self, out, dyn_cam_info, y_q=None, mvt1_or_mvt2=True):
+    def get_wpt(self, out, mvt1_or_mvt2, dyn_cam_info, y_q=None):
         """
         Estimate the q-values given output from mvt
         :param out: output from mvt
@@ -217,74 +174,101 @@ class MVT(nn.Module):
         """
         assert isinstance(mvt1_or_mvt2, bool)
         if mvt1_or_mvt2:
-            wpt = self.mvt1.get_wpt(out, dyn_cam_info, y_q)
+            wpt = self.mvt1.get_wpt(
+                out, dyn_cam_info, y_q,
+            )
         else:
             assert self.stage_two
-            wpt = self.mvt2.get_wpt(out["mvt2"], dyn_cam_info, y_q)
+            wpt = self.mvt2.get_wpt(
+                out["mvt2"], dyn_cam_info, y_q
+            )
             wpt = out["rev_trans"](wpt)
+
         return wpt
 
-    def render(self, pc, img_feat, img_aug, dyn_cam_info, mvt1_or_mvt2=True):
+    def render(self, pc, img_feat, img_aug, mvt1_or_mvt2, dyn_cam_info):
         assert isinstance(mvt1_or_mvt2, bool)
-        mvt = self.mvt1 if mvt1_or_mvt2 else self.mvt2
+        if mvt1_or_mvt2:
+            mvt = self.mvt1
+        else:
+            mvt = self.mvt2
 
         with torch.no_grad():
-            if dyn_cam_info is None:
-                dyn_cam_info_itr = (None,) * len(pc)
-            else:
-                dyn_cam_info_itr = dyn_cam_info
+            with autocast(enabled=False):
+                if dyn_cam_info is None:
+                    dyn_cam_info_itr = (None,) * len(pc)
+                else:
+                    dyn_cam_info_itr = dyn_cam_info
 
-            if mvt.add_corr:
-                img = [
-                    self.renderer(
-                        _pc,
-                        torch.cat((_pc, _img_feat), dim=-1),
-                        fix_cam=True,
-                        dyn_cam_info=(_dyn_cam_info,)
-                        if not (_dyn_cam_info is None)
-                        else None,
-                    ).unsqueeze(0)
-                    for (_pc, _img_feat, _dyn_cam_info) in zip(
-                        pc, img_feat, dyn_cam_info_itr
-                    )
-                ]
-            else:
-                img = [
-                    self.renderer(
-                        _pc,
-                        _img_feat,
-                        fix_cam=True,
-                        dyn_cam_info=(_dyn_cam_info,)
-                        if not (_dyn_cam_info is None)
-                        else None,
-                    ).unsqueeze(0)
-                    for (_pc, _img_feat, _dyn_cam_info) in zip(
-                        pc, img_feat, dyn_cam_info_itr
-                    )
-                ]
+                if mvt.add_corr:
+                    if mvt.norm_corr:
+                        img = []
+                        for _pc, _img_feat, _dyn_cam_info in zip(
+                            pc, img_feat, dyn_cam_info_itr
+                        ):
+                            # fix when the pc is empty
+                            max_pc = 1.0 if len(_pc) == 0 else torch.max(torch.abs(_pc))
+                            img.append(
+                                self.renderer(
+                                    _pc,
+                                    torch.cat((_pc / max_pc, _img_feat), dim=-1),
+                                    fix_cam=True,
+                                    dyn_cam_info=(_dyn_cam_info,)
+                                    if not (_dyn_cam_info is None)
+                                    else None,
+                                ).unsqueeze(0)
+                            )
+                    else:
+                        img = [
+                            self.renderer(
+                                _pc,
+                                torch.cat((_pc, _img_feat), dim=-1),
+                                fix_cam=True,
+                                dyn_cam_info=(_dyn_cam_info,)
+                                if not (_dyn_cam_info is None)
+                                else None,
+                            ).unsqueeze(0)
+                            for (_pc, _img_feat, _dyn_cam_info) in zip(
+                                pc, img_feat, dyn_cam_info_itr
+                            )
+                        ]
+                else:
+                    img = [
+                        self.renderer(
+                            _pc,
+                            _img_feat,
+                            fix_cam=True,
+                            dyn_cam_info=(_dyn_cam_info,)
+                            if not (_dyn_cam_info is None)
+                            else None,
+                        ).unsqueeze(0)
+                        for (_pc, _img_feat, _dyn_cam_info) in zip(
+                            pc, img_feat, dyn_cam_info_itr
+                        )
+                    ]
 
-            img = torch.cat(img, 0)
-            img = img.permute(0, 1, 4, 2, 3)
+        img = torch.cat(img, 0)
+        img = img.permute(0, 1, 4, 2, 3)
 
-            # for visualization purposes
-            if mvt.add_corr:
-                mvt.img = img[:, :, 3:].clone().detach()
-            else:
-                mvt.img = img.clone().detach()
+        # for visualization purposes
+        if mvt.add_corr:
+            mvt.img = img[:, :, 3:].clone().detach()
+        else:
+            mvt.img = img.clone().detach()
 
-            # image augmentation
-            if img_aug != 0:
-                stdv = img_aug * torch.rand(1, device=img.device)
-                # values in [-stdv, stdv]
-                noise = stdv * ((2 * torch.rand(*img.shape, device=img.device)) - 1)
-                img = torch.clamp(img + noise, -1, 1)
+        # image augmentation
+        if img_aug != 0:
+            stdv = img_aug * torch.rand(1, device=img.device)
+            # values in [-stdv, stdv]
+            noise = stdv * ((2 * torch.rand(*img.shape, device=img.device)) - 1)
+            img = torch.clamp(img + noise, -1, 1)
 
-            if mvt.add_pixel_loc:
-                bs = img.shape[0]
-                pixel_loc = mvt.pixel_loc.to(img.device)
-                img = torch.cat(
-                    (img, pixel_loc.unsqueeze(0).repeat(bs, 1, 1, 1, 1)), dim=2
-                )
+        if mvt.add_pixel_loc:
+            bs = img.shape[0]
+            pixel_loc = mvt.pixel_loc.to(img.device)
+            img = torch.cat(
+                (img, pixel_loc.unsqueeze(0).repeat(bs, 1, 1, 1, 1)), dim=2
+            )
 
         return img
 
@@ -295,20 +279,32 @@ class MVT(nn.Module):
         proprio,
         lang_emb,
         img_aug,
-        wpt_local=None,
-        rot_x_y=None,
+        wpt_local,
+        rot_x_y,
     ):
+        bs = len(pc)
+        assert bs == len(img_feat)
+
         if not self.training:
             # no img_aug when not training
             assert img_aug == 0
             assert rot_x_y is None, f"rot_x_y={rot_x_y}"
-        if self.training:
-            if self.stage_two:
-                assert wpt_local is not None, "stage_two training requires wpt_local"
-            assert rot_x_y is None, f"rot_x_y={rot_x_y}"
 
-        bs = len(pc)
-        assert bs == len(img_feat)
+        if self.training:
+            assert (
+                (not self.feat_ver == 1)
+                or (not wpt_local is None)
+            )
+
+            if self.rot_ver == 0:
+                assert rot_x_y is None, f"rot_x_y={rot_x_y}"
+            elif self.rot_ver == 1:
+                assert rot_x_y.shape == (bs, 2), f"rot_x_y.shape={rot_x_y.shape}"
+                assert (rot_x_y >= 0).all() and (
+                    rot_x_y < self.num_rot
+                ).all(), f"rot_x_y={rot_x_y}"
+            else:
+                assert False
 
         for _pc, _img_feat in zip(pc, img_feat):
             np, x1 = _pc.shape
@@ -341,10 +337,13 @@ class MVT(nn.Module):
                 torch.all(lang_emb == 0)
             ), f"Invalid input for lang={lang}"
 
-        if wpt_local is not None:
+        if not (wpt_local is None):
             bs5, x6 = wpt_local.shape
             assert bs == bs5
             assert x6 == 3, "Does not support wpt_local of shape {wpt_local.shape}"
+
+        if self.training:
+            assert (not self.stage_two) or (not wpt_local is None)
 
     def forward(
         self,
@@ -364,23 +363,40 @@ class MVT(nn.Module):
         :param proprio: tensor of shape (bs, priprio_dim)
         :param lang_emb: tensor of shape (bs, lang_len, lang_dim)
         :param img_aug: (float) magnitude of augmentation in rgb image
+        :param wpt_local: gt location of the wpt in 3D, tensor of shape
+            (bs, 3)
+        :param rot_x_y: (bs, 2) rotation in x and y direction
         """
-
-        self.verify_inp(pc, img_feat, proprio, lang_emb, img_aug, wpt_local, rot_x_y)
-        # bs, [Nx, 3], bs, [Nx,3]
-        # print("input:",len(pc), pc[0].size(), len(img_feat), img_feat[0].size())
-        img = self.render(
-            pc,
-            img_feat,
-            img_aug,
-            dyn_cam_info=None,
-            mvt1_or_mvt2=True,
+        self.verify_inp(
+            pc=pc,
+            img_feat=img_feat,
+            proprio=proprio,
+            lang_emb=lang_emb,
+            img_aug=img_aug,
+            wpt_local=wpt_local,
+            rot_x_y=rot_x_y,
         )
-        # print("input img:", img.size()) # [B, 5, 10, 220, 220]
+        with torch.no_grad():
+            if self.training and (self.img_aug_2 != 0):
+                for x in img_feat:
+                    stdv = self.img_aug_2 * torch.rand(1, device=x.device)
+                    # values in [-stdv, stdv]
+                    noise = stdv * ((2 * torch.rand(*x.shape, device=x.device)) - 1)
+                    x = x + noise
+            img = self.render(
+                pc=pc,
+                img_feat=img_feat,
+                img_aug=img_aug,
+                mvt1_or_mvt2=True,
+                dyn_cam_info=None,
+            )
+
         if self.training:
-            wpt_local_stage_one = wpt_local.clone().detach() if wpt_local is not None else None
+            wpt_local_stage_one = wpt_local
+            wpt_local_stage_one = wpt_local_stage_one.clone().detach()
         else:
             wpt_local_stage_one = wpt_local
+
         out = self.mvt1(
             img=img,
             proprio=proprio,
@@ -389,15 +405,20 @@ class MVT(nn.Module):
             rot_x_y=rot_x_y,
             **kwargs,
         )
+
         if self.stage_two:
             with torch.no_grad():
+                # adding then noisy location for training
                 if self.training:
+                    # noise is added so that the wpt_local2 is not exactly at
+                    # the center of the pc
                     wpt_local_stage_one_noisy = mvt_utils.add_uni_noi(
                         wpt_local_stage_one.clone().detach(), 2 * self.st_wpt_loc_aug
                     )
                     pc, rev_trans = mvt_utils.trans_pc(
                         pc, loc=wpt_local_stage_one_noisy, sca=self.st_sca
                     )
+
                     if self.st_wpt_loc_inp_no_noise:
                         wpt_local2, _ = mvt_utils.trans_pc(
                             wpt_local, loc=wpt_local_stage_one_noisy, sca=self.st_sca
@@ -406,22 +427,28 @@ class MVT(nn.Module):
                         wpt_local2, _ = mvt_utils.trans_pc(
                             wpt_local, loc=wpt_local_stage_one, sca=self.st_sca
                         )
+
                 else:
-                    wpt_local_stage_one = self.get_wpt(
-                        out, dyn_cam_info=None, y_q=None, mvt1_or_mvt2=True
+                    # bs, 3
+                    wpt_local = self.get_wpt(
+                        out, y_q=None, mvt1_or_mvt2=True,
+                        dyn_cam_info=None,
                     )
                     pc, rev_trans = mvt_utils.trans_pc(
-                        pc, loc=wpt_local_stage_one, sca=self.st_sca
+                        pc, loc=wpt_local, sca=self.st_sca
                     )
-                    wpt_local_stage_one_noisy = wpt_local_stage_one
+                    # bad name!
+                    wpt_local_stage_one_noisy = wpt_local
+
+                    # must pass None to mvt2 while in eval
                     wpt_local2 = None
 
                 img = self.render(
-                    pc,
-                    img_feat,
-                    img_aug,
-                    dyn_cam_info=None,
+                    pc=pc,
+                    img_feat=img_feat,
+                    img_aug=img_aug,
                     mvt1_or_mvt2=False,
+                    dyn_cam_info=None,
                 )
 
             out_mvt2 = self.mvt2(
@@ -432,12 +459,10 @@ class MVT(nn.Module):
                 rot_x_y=rot_x_y,
                 **kwargs,
             )
+
             out["wpt_local1"] = wpt_local_stage_one_noisy
             out["rev_trans"] = rev_trans
             out["mvt2"] = out_mvt2
-        # dict, ['trans','feat'], [bs,5,220,220], [bs, 220]
-        # print("output:",type(out), out.keys(), out['trans'].size(), out['feat'].size())
-        # print("vis feat:", out['vis_feat'].size())  ### [bs*5, C, H, W]
 
         return out
 
@@ -445,8 +470,9 @@ class MVT(nn.Module):
         """
         Could be used for freeing up the memory once a batch of testing is done
         """
-        print("Freeing up some memory")
-        self.renderer.free_mem()
+        if not self.use_point_renderer:
+            print("Freeing up some memory")
+            self.renderer.free_mem()
 
 
 if __name__ == "__main__":

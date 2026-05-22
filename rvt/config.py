@@ -17,30 +17,7 @@ _C.epochs = 20
 _C.num_workers = 0
 # 'transition_uniform' or 'task_uniform'
 _C.sample_distribution_mode = 'transition_uniform'
-
-_C.depth = 8
-_C.attn_dim = 512
-_C.img_size = 224
-_C.img_patch_size = 16
-
-_C.ds_rate = 0.0
-_C.adapter = [] 
-_C.model = "MVTSingle"
-_C.output_dim = 256
-
-# RVT-2-compatible knobs. Phase 1 keeps these disabled so the existing
-# RVT-1/HR-Align path remains the default behavior.
-_C.stage_two = False
-_C.stage_two_mvt_resnet = False
-_C.rot_ver = 0
-_C.rot_x_y_aug = 2
-_C.feat_ver = 0
-_C.use_point_renderer = False
-_C.cvx_up = False
-
-_C.overwriter_log_dir = "runs/test"
-_C.pretrain=None
-
+_C.train_iter = 16 * 10000
 
 # arguments present in both peract and rvt
 # some of them donot support every possible combination in peract
@@ -54,6 +31,8 @@ _C.peract.warmup_steps = 0
 _C.peract.lr_cos_dec = False
 _C.peract.add_rgc_loss = True
 _C.peract.num_rotation_classes = 72
+_C.peract.amp = False
+_C.peract.bnb = False
 _C.peract.transform_augmentation = True
 _C.peract.transform_augmentation_xyz = [0.1, 0.1, 0.1]
 _C.peract.transform_augmentation_rpy = [0.0, 0.0, 20.0]
