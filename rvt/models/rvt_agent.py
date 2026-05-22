@@ -3,6 +3,7 @@
 # Licensed under the NVIDIA Source Code License [see LICENSE for details].
 
 import pprint
+import warnings
 
 import clip
 import torch
@@ -12,7 +13,7 @@ import torch.nn as nn
 import bitsandbytes as bnb
 
 from scipy.spatial.transform import Rotation
-from torch.cuda.amp import autocast, GradScaler
+from torch.amp import autocast, GradScaler
 from torch.nn.parallel.distributed import DistributedDataParallel
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
@@ -26,6 +27,12 @@ from peract_colab.arm.optim.lamb import Lamb
 from yarr.agents.agent import ActResult
 from rvt.utils.dataset import _clip_encode_text
 from rvt.utils.lr_sched_utils import GradualWarmupScheduler
+
+warnings.filterwarnings(
+    "ignore",
+    message="Gimbal lock detected.*",
+    category=UserWarning,
+)
 
 
 def eval_con(gt, pred):
@@ -351,7 +358,7 @@ class RVTAgent:
 
         self.num_all_rot = self._num_rotation_classes * 3
 
-        self.scaler = GradScaler(enabled=self.amp)
+        self.scaler = GradScaler("cuda", enabled=self.amp)
 
     def build(self, training: bool, device: torch.device = None):
         self._training = training
@@ -568,12 +575,12 @@ class RVTAgent:
                 action_trans_con, action_rot, pc = apply_se3_aug_con(
                     pcd=pc,
                     action_gripper_pose=action_gripper_pose,
-                    bounds=torch.tensor(self.scene_bounds),
-                    trans_aug_range=torch.tensor(self._transform_augmentation_xyz),
-                    rot_aug_range=torch.tensor(self._transform_augmentation_rpy),
+                    bounds=torch.as_tensor(self.scene_bounds, device=pc[0].device),
+                    trans_aug_range=self._transform_augmentation_xyz.to(pc[0].device),
+                    rot_aug_range=torch.as_tensor(self._transform_augmentation_rpy, device=pc[0].device),
                 )
-                action_trans_con = torch.tensor(action_trans_con).to(pc.device)
-                action_rot = torch.tensor(action_rot).to(pc.device)
+                action_trans_con = torch.as_tensor(action_trans_con, device=pc[0].device)
+                action_rot = torch.as_tensor(action_rot, device=pc[0].device)
 
             # TODO: vectorize
             action_rot = action_rot.cpu().numpy()
@@ -623,7 +630,7 @@ class RVTAgent:
 
             dyn_cam_info = None
 
-        with autocast(enabled=self.amp):
+        with autocast("cuda", enabled=self.amp):
             (
                 action_rot_x_one_hot,
                 action_rot_y_one_hot,
@@ -669,7 +676,7 @@ class RVTAgent:
 
         loss_log = {}
         if backprop:
-            with autocast(enabled=self.amp):
+            with autocast("cuda", enabled=self.amp):
                 # cross-entropy loss
                 trans_loss = self._cross_entropy_loss(q_trans, action_trans).mean()
                 rot_loss_x = rot_loss_y = rot_loss_z = 0.0
@@ -720,9 +727,12 @@ class RVTAgent:
 
             self._optimizer.zero_grad(set_to_none=True)
             self.scaler.scale(total_loss).backward()
+            old_scale = self.scaler.get_scale()
             self.scaler.step(self._optimizer)
             self.scaler.update()
-            self._lr_sched.step()
+            new_scale = self.scaler.get_scale()
+            if (not self.amp) or (new_scale >= old_scale):
+                self._lr_sched.step()
 
             loss_log = {
                 "total_loss": total_loss.item(),

@@ -9,10 +9,14 @@ peract:
   warmup_steps: 2000
   optimizer_type: lamb
   lr_cos_dec: True
+  lambda_weight_l2: 1e-4
+  amp: True
+  bnb: True
   transform_augmentation_xyz: [0.125, 0.125, 0.125]
   transform_augmentation_rpy: [0.0, 0.0, 45.0]
 rvt:
   place_with_mean: False
+  img_aug: 0.0
 
 
 depth: 1
@@ -23,11 +27,13 @@ adapter: ['late.layer.3.k.1.down.4.g.8']
 model: "MVT_Resnet" 
 output_dim: 512
 stage_two: False
-rot_ver: 0
-feat_ver: 0
+rot_ver: 1
+feat_ver: 1
 cvx_up: False
 
 pretrain: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/pretrains/AdaptedR3M.pyth
 overwriter_log_dir: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/runs/adaptedR3M2RLBench_reproduced_first_try
+train_replay_storage_dir: /home/paichichi/data/rvt/train/replay/replay_train
+num_train: 100
 
 ### python train.py --exp_cfg_path configs/adaptedR3M.yaml --device 0,1,2,3,4,5,6,7

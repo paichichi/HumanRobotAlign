@@ -290,7 +290,7 @@ def apply_se3_aug_con(
     if len(trans_aug_range.shape) == 1:
         trans_aug_range = trans_aug_range.unsqueeze(0).repeat(bs, 1).to(device)
     if len(rot_aug_range.shape) == 1:
-        rot_aug_range = rot_aug_range.unsqueeze(0).repeat(bs, 1)
+        rot_aug_range = rot_aug_range.unsqueeze(0).repeat(bs, 1).to(device)
 
     # identity matrix
     identity_4x4 = torch.eye(4).unsqueeze(0).repeat(bs, 1, 1).to(device=device)
@@ -350,9 +350,9 @@ def apply_se3_aug_con(
     trans_shift_4x4 = identity_4x4.detach().clone()
     trans_shift_4x4[:, 0:3, 3] = trans_shift
 
-    roll = np.deg2rad(rot_aug_range[:, 0:1] * aug_utils.rand_dist((bs, 1)))
-    pitch = np.deg2rad(rot_aug_range[:, 1:2] * aug_utils.rand_dist((bs, 1)))
-    yaw = np.deg2rad(rot_aug_range[:, 2:3] * aug_utils.rand_dist((bs, 1)))
+    roll = torch.deg2rad(rot_aug_range[:, 0:1] * aug_utils.rand_dist((bs, 1)).to(device=device))
+    pitch = torch.deg2rad(rot_aug_range[:, 1:2] * aug_utils.rand_dist((bs, 1)).to(device=device))
+    yaw = torch.deg2rad(rot_aug_range[:, 2:3] * aug_utils.rand_dist((bs, 1)).to(device=device))
     rot_shift_3x3 = torch3d_tf.euler_angles_to_matrix(
         torch.cat((roll, pitch, yaw), dim=1), "XYZ"
     )

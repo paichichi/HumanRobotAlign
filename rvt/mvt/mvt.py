@@ -6,7 +6,7 @@ import copy
 import torch
 
 from torch import nn
-from torch.cuda.amp import autocast
+from torch.amp import autocast
 
 import rvt.mvt.utils as mvt_utils
 
@@ -151,16 +151,6 @@ class MVT(nn.Module):
                     "MVT_Resnet does not support stage_two=True yet. "
                     "Set stage_two: False in the HR-Align exp config."
                 )
-            if rot_ver != 0:
-                raise NotImplementedError(
-                    "MVT_Resnet does not support rot_ver=1 yet because it does "
-                    "not emit feat_x/feat_y/feat_z/feat_ex_rot."
-                )
-            if feat_ver != 0:
-                raise NotImplementedError(
-                    "MVT_Resnet does not support feat_ver=1 yet because it does "
-                    "not implement waypoint-conditioned feature extraction."
-                )
             if cvx_up:
                 raise NotImplementedError(
                     "MVT_Resnet does not support cvx_up=True yet. "
@@ -169,13 +159,9 @@ class MVT(nn.Module):
             resnet_args = copy.deepcopy(args)
             for key in (
                 "model",
-                "norm_corr",
                 "rend_three_views",
-                "wpt_img_aug",
                 "inp_pre_pro",
                 "inp_pre_con",
-                "xops",
-                "num_rot",
                 "rot_x_y_aug",
             ):
                 del resnet_args[key]
@@ -240,7 +226,7 @@ class MVT(nn.Module):
             mvt = self.mvt2
 
         with torch.no_grad():
-            with autocast(enabled=False):
+            with autocast("cuda", enabled=False):
                 if dyn_cam_info is None:
                     dyn_cam_info_itr = (None,) * len(pc)
                 else:

@@ -3,6 +3,7 @@
 # Licensed under the NVIDIA Source Code License [see LICENSE for details].
 import copy
 import os
+os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 import time
 import tqdm
 import random
@@ -38,7 +39,7 @@ from rvt.utils.peract_utils import (
     CAMERAS,
     SCENE_BOUNDS,
     IMAGE_SIZE,
-    DATA_FOLDER,
+    DATA_FOLDER as DEFAULT_DATA_FOLDER,
 )
 
 
@@ -136,10 +137,8 @@ def load_checkpoint(
     not_used1=0
     not_used2=0
 
-    pre_train_dict = checkpoint["model_state"]      ### added
-    model_dict = ms.state_dict()                    ### added
-    print("pre_train_dict",pre_train_dict.keys())   ### added
-    print("model_dict:",model_dict.keys())          ### added
+    pre_train_dict = checkpoint["model_state"]
+    model_dict = ms.state_dict()
 
     # Match pre-trained weights that have same shape as current model.
     pre_train_dict_match = {}
@@ -152,7 +151,6 @@ def load_checkpoint(
             if v.size() == model_dict[k].size():
                 pre_train_dict_match[k] = v
             else:
-                print("pre-trained not used ::: ", k, v.size(), model_dict[k].size())
                 not_used1+=1  ### added
                 not_used_layers.append(k)
         else:
@@ -168,21 +166,18 @@ def load_checkpoint(
         not_used1,not_used2,
         len(not_load_layers),
         len(model_dict.keys()),len(pre_train_dict.keys())))
-    # Log weights that are not loaded with the pre-trained weights.
     if not_load_layers:
-        for k in not_load_layers:
-            print("current network weights {} not loaded.".format(k))
+        print("current network weights not loaded (first 20): {}".format(not_load_layers[:20]))
     if not_used_layers:
-        for k in not_used_layers:
-            print("pre-trained weights {} not used.".format(k))
+        print("pre-trained weights not used (first 20): {}".format(not_used_layers[:20]))
     # Load pre-trained weights.
     missing_keys, unexpected_keys = ms.load_state_dict(
         pre_train_dict_match, strict=False
     )
 
-    print("matched keys: {}".format(len(pre_train_dict_match)))  ### added
-    print("missing keys: {},{}".format(len(missing_keys),missing_keys))
-    print("unexpected keys: {},{}".format(len(unexpected_keys),unexpected_keys))
+    print("matched keys: {}".format(len(pre_train_dict_match)))
+    print("missing keys: {}; first 20: {}".format(len(missing_keys), missing_keys[:20]))
+    print("unexpected keys: {}; first 20: {}".format(len(unexpected_keys), unexpected_keys[:20]))
             
     return
 
@@ -320,7 +315,8 @@ def experiment(rank, cmd_args, devices, port):
     device = devices[rank]
     device = f"cuda:{device}"
     ddp = len(devices) > 1
-    ddp_utils.setup(rank, world_size=len(devices), port=port)
+    if ddp:
+        ddp_utils.setup(rank, world_size=len(devices), port=port)
 
     exp_cfg = exp_cfg_mod.get_cfg_defaults()
     if cmd_args.exp_cfg_path != "":
@@ -346,13 +342,24 @@ def experiment(rank, cmd_args, devices, port):
 
     # Things to change
     BATCH_SIZE_TRAIN = exp_cfg.bs
-    NUM_TRAIN = 100 # setting to 200 match with X-ICM
-    # DATA_FOLDER = "put_your_RLBench_data_path_in_here"
-    # to match peract, iterations per epoch
-    TRAINING_ITERATIONS = int(10000 // (exp_cfg.bs * len(devices) / 16))
+    NUM_TRAIN = exp_cfg.num_train if exp_cfg.num_train is not None else 100
+    DATA_FOLDER = exp_cfg.data_folder if exp_cfg.data_folder else DEFAULT_DATA_FOLDER
+    if exp_cfg.train_iterations is not None:
+        TRAINING_ITERATIONS = exp_cfg.train_iterations
+    else:
+        # to match peract, iterations per epoch
+        TRAINING_ITERATIONS = int(10000 // (exp_cfg.bs * len(devices) / 16))
     EPOCHS = exp_cfg.epochs
-    TRAIN_REPLAY_STORAGE_DIR = "/home/paichichi/data/rvt/replay"
-    TEST_REPLAY_STORAGE_DIR = ""
+    TRAIN_REPLAY_STORAGE_DIR = (
+        exp_cfg.train_replay_storage_dir
+        if exp_cfg.train_replay_storage_dir
+        else "RLBench/rvt_replay"
+    )
+    TEST_REPLAY_STORAGE_DIR = (
+        exp_cfg.test_replay_storage_dir
+        if exp_cfg.test_replay_storage_dir
+        else "replay/replay_val"
+    )
     log_dir = get_logdir(cmd_args, exp_cfg)
     tasks = get_tasks(exp_cfg)
     print("Training on {} tasks: {}".format(len(tasks), tasks))
@@ -425,7 +432,8 @@ def experiment(rank, cmd_args, devices, port):
         print(f"Recovering model and checkpoint from {exp_cfg.resume}")
         epoch = load_agent(agent_path, agent, only_epoch=False)
         start_epoch = epoch + 1
-    dist.barrier()
+    if ddp:
+        dist.barrier()
 
     if rank == 0:
         ## logging unchanged values to reproduce the same setting
@@ -487,4 +495,7 @@ if __name__ == "__main__":
     devices = [int(x) for x in devices]
 
     port = (random.randint(0, 3000) % 3000) + 27000
-    mp.spawn(experiment, args=(cmd_args, devices, port), nprocs=len(devices), join=True)
+    if len(devices) == 1:
+        experiment(0, cmd_args, devices, port)
+    else:
+        mp.spawn(experiment, args=(cmd_args, devices, port), nprocs=len(devices), join=True)

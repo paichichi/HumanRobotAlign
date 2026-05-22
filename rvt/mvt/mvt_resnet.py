@@ -10,6 +10,7 @@ import torch.nn.functional as F
 from torch import nn
 from einops import rearrange, repeat
 
+import rvt.mvt.utils as mvt_utils
 from rvt.mvt.attn import (
     Conv2DBlock,
     Conv2DUpsampleBlock,
@@ -18,6 +19,7 @@ from rvt.mvt.attn import (
     cache_fn,
     DenseBlock,
     FeedForward,
+    FixedPositionalEncoding,
 )
 
 from .resnet import *
@@ -50,6 +52,7 @@ class MVT_Resnet(nn.Module):
         final_dim,
         self_cross_ver,
         add_corr,
+        norm_corr,
         add_pixel_loc,
         add_depth,
         pe_fix,
@@ -62,6 +65,9 @@ class MVT_Resnet(nn.Module):
         rot_ver=0,
         feat_ver=0,
         cvx_up=False,
+        xops=False,
+        wpt_img_aug=0.0,
+        num_rot=72,
         use_point_renderer=False,
         no_feat=False,
         **kwargs,
@@ -101,15 +107,13 @@ class MVT_Resnet(nn.Module):
         super().__init__()
         if kwargs:
             raise TypeError(f"Unsupported MVT_Resnet options: {sorted(kwargs)}")
-        if rot_ver != 0:
+        if rot_ver not in (0, 1):
             raise NotImplementedError(
-                "MVT_Resnet currently supports only rot_ver=0. "
-                "rot_ver=1 requires feat_x/feat_y/feat_z/feat_ex_rot outputs."
+                "MVT_Resnet currently supports only rot_ver=0 or rot_ver=1."
             )
-        if feat_ver != 0:
+        if feat_ver not in (0, 1):
             raise NotImplementedError(
-                "MVT_Resnet currently supports only feat_ver=0. "
-                "feat_ver=1 requires waypoint-conditioned feature extraction."
+                "MVT_Resnet currently supports only feat_ver=0 or feat_ver=1."
             )
         if cvx_up:
             raise NotImplementedError("MVT_Resnet does not support cvx_up=True yet.")
@@ -128,19 +132,30 @@ class MVT_Resnet(nn.Module):
         self.decoder_dropout = decoder_dropout
         self.self_cross_ver = self_cross_ver
         self.add_corr = add_corr
+        self.norm_corr = norm_corr
         self.add_pixel_loc = add_pixel_loc
         self.add_depth = add_depth
         self.pe_fix = pe_fix
         self.attn_dim = attn_dim
         self.use_point_renderer = use_point_renderer
+        self.xops = xops
+        self.feat_ver = feat_ver
+        self.rot_ver = rot_ver
+        self.wpt_img_aug = wpt_img_aug
+        self.num_rot = num_rot
         self.pretrain_path = pretrain_path
         self.no_feat = no_feat
 
-        print(f"MVT Resnet Vars: {vars(self)}")
-
         self.adapter=adapter
         self.ds_rate=ds_rate
-        print(f"adapter:{self.adapter}, ds_rate:{self.ds_rate}")
+        print(
+            "MVT_Resnet: "
+            f"depth={self.depth}, img_size={self.img_size}, patch={self.img_patch_size}, "
+            f"attn_dim={self.attn_dim}, ds_rate={self.ds_rate}, adapter={self.adapter}, "
+            f"xops={self.xops}, feat_ver={self.feat_ver}, rot_ver={self.rot_ver}, "
+            f"point_renderer={self.use_point_renderer}, "
+            f"pretrain={self.pretrain_path}"
+        )
         self.convnet = resnet50(pretrained=None, adapter=self.adapter, ds_rate=self.ds_rate)
         self.convnet.fc = nn.Identity()
         for name, param in self.named_parameters():
@@ -264,6 +279,7 @@ class MVT_Resnet(nn.Module):
                 heads=attn_heads,
                 dim_head=attn_dim_head,
                 dropout=attn_dropout,
+                use_fast=xops,
             ),
         )
         get_attn_ff = lambda: PreNorm(attn_dim, FeedForward(attn_dim))
@@ -286,6 +302,7 @@ class MVT_Resnet(nn.Module):
             strides=self.img_patch_size,
             norm=None,
             activation=activation,
+            out_size=(spatial_size * self.img_patch_size, spatial_size * self.img_patch_size),
         )
 
         #final_inp_dim = self.im_channels + self.custom_input_dim #inp_pre_out_dim
@@ -326,13 +343,45 @@ class MVT_Resnet(nn.Module):
         feat_fc_dim += self.input_dim_before_seq
         feat_fc_dim += self.im_channels #self.final_dim
 
-        self.feat_fc = nn.Sequential(
-            nn.Linear(self.num_img * feat_fc_dim, feat_fc_dim),
-            nn.ReLU(),
-            nn.Linear(feat_fc_dim, feat_fc_dim // 2),
-            nn.ReLU(),
-            nn.Linear(feat_fc_dim // 2, feat_out_size),
-        )
+        def get_feat_fc(_feat_in_size, _feat_out_size, _feat_fc_dim=feat_fc_dim):
+            return nn.Sequential(
+                nn.Linear(_feat_in_size, _feat_fc_dim),
+                nn.ReLU(),
+                nn.Linear(_feat_fc_dim, _feat_fc_dim // 2),
+                nn.ReLU(),
+                nn.Linear(_feat_fc_dim // 2, _feat_out_size),
+            )
+
+        if self.rot_ver == 0:
+            self.feat_fc = get_feat_fc(self.num_img * feat_fc_dim, feat_out_size)
+        elif self.rot_ver == 1:
+            assert self.num_rot * 3 <= feat_out_size
+            feat_out_size_ex_rot = feat_out_size - (self.num_rot * 3)
+            if feat_out_size_ex_rot > 0:
+                self.feat_fc_ex_rot = get_feat_fc(
+                    self.num_img * feat_fc_dim, feat_out_size_ex_rot
+                )
+
+            self.feat_fc_init_bn = nn.BatchNorm1d(self.num_img * feat_fc_dim)
+            self.feat_fc_pe = FixedPositionalEncoding(
+                self.num_img * feat_fc_dim, feat_scale_factor=1
+            )
+            self.feat_fc_x = get_feat_fc(self.num_img * feat_fc_dim, self.num_rot)
+            self.feat_fc_y = get_feat_fc(self.num_img * feat_fc_dim, self.num_rot)
+            self.feat_fc_z = get_feat_fc(self.num_img * feat_fc_dim, self.num_rot)
+        else:
+            assert False
+
+        if self.use_point_renderer:
+            from point_renderer.rvt_ops import select_feat_from_hm
+        else:
+            from mvt.renderer import select_feat_from_hm
+        global select_feat_from_hm
+
+    def train(self, mode: bool = True):
+        super().train(mode)
+        self.convnet.eval()
+        return self
 
     def get_pt_loc_on_img(self, pt, dyn_cam_info):
         """
@@ -371,8 +420,6 @@ class MVT_Resnet(nn.Module):
         img = img[:, 3:6, :, :].contiguous()
         
 
-        self.convnet.eval()  
-        
         with torch.no_grad():
             d0 = self.convnet(img)
         
@@ -511,17 +558,73 @@ class MVT_Resnet(nn.Module):
         # translation decoder
         trans = self.trans_decoder(u).view(bs, self.num_img, h, w)
 
-        hm = F.softmax(trans.detach().view(bs, self.num_img, h * w), 2).view(
-            bs * self.num_img, 1, h, w
-        )
+        if self.feat_ver == 0:
+            hm = F.softmax(trans.detach().view(bs, self.num_img, h * w), 2).view(
+                bs * self.num_img, 1, h, w
+            )
+            _feat = torch.sum(hm * u, dim=[2, 3])
+            _feat = _feat.view(bs, -1)
+        elif self.feat_ver == 1:
+            if self.training:
+                assert wpt_local is not None
+            else:
+                wpt_local = self.get_wpt(
+                    out={"trans": trans.clone().detach()},
+                    dyn_cam_info=None,
+                )
 
-        _feat = torch.sum(hm * u, dim=[2, 3])
-        _feat = _feat.view(bs, -1)
+            wpt_img = self.get_pt_loc_on_img(
+                wpt_local.unsqueeze(1),
+                dyn_cam_info=None,
+            )
+            wpt_img = wpt_img.reshape(bs * self.num_img, 2)
+
+            if self.training:
+                wpt_img = mvt_utils.add_uni_noi(
+                    wpt_img, self.wpt_img_aug * self.img_size
+                )
+                wpt_img = torch.clamp(wpt_img, 0, self.img_size - 1)
+
+            _feat = select_feat_from_hm(wpt_img.unsqueeze(1), u)[0]
+            _feat = _feat.view(bs, -1)
+        else:
+            assert False
+
         feat.append(_feat)
         feat = torch.cat(feat, dim=-1)
-        feat = self.feat_fc(feat)
+        if self.rot_ver == 0:
+            feat = self.feat_fc(feat)
+            out = {"feat": feat}
+        elif self.rot_ver == 1:
+            assert rot_x_y is not None or not self.training
+            feat_ex_rot = self.feat_fc_ex_rot(feat)
 
-        out = {"trans": trans, "feat": feat, "vis_feat": vis_feat}
+            feat_rot = self.feat_fc_init_bn(feat)
+            feat_x = self.feat_fc_x(feat_rot)
+
+            if self.training:
+                rot_x = rot_x_y[..., 0].view(bs, 1)
+            else:
+                rot_x = feat_x.argmax(dim=1, keepdim=True)
+            rot_x_pe = self.feat_fc_pe(rot_x)
+            feat_y = self.feat_fc_y(feat_rot + rot_x_pe)
+
+            if self.training:
+                rot_y = rot_x_y[..., 1].view(bs, 1)
+            else:
+                rot_y = feat_y.argmax(dim=1, keepdim=True)
+            rot_y_pe = self.feat_fc_pe(rot_y)
+            feat_z = self.feat_fc_z(feat_rot + rot_x_pe + rot_y_pe)
+            out = {
+                "feat_ex_rot": feat_ex_rot,
+                "feat_x": feat_x,
+                "feat_y": feat_y,
+                "feat_z": feat_z,
+            }
+        else:
+            assert False
+
+        out.update({"trans": trans, "vis_feat": vis_feat})
 
         return out
 
@@ -554,6 +657,8 @@ class MVT_Resnet(nn.Module):
             for i in range(bs)
         ]
         pred_wpt = torch.cat(pred_wpt, 0)
+        if self.use_point_renderer:
+            pred_wpt = pred_wpt.squeeze(1)
 
         assert y_q is None
 
