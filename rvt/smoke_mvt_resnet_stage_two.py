@@ -22,9 +22,9 @@ if THIS_DIR not in sys.path:
 
 import rvt.config as default_exp_cfg
 import rvt.mvt.config as default_mvt_cfg
-from rvt.models import rvt_agent
+# from rvt.models import rvt_agent
 from rvt.mvt.mvt import MVT
-from rvt.utils.peract_utils import CAMERAS, IMAGE_SIZE, SCENE_BOUNDS
+# from rvt.utils.peract_utils import CAMERAS, IMAGE_SIZE, SCENE_BOUNDS
 
 
 def _merge_optional(cfg, path):
@@ -41,7 +41,7 @@ def build_configs(args):
     exp_cfg.depth = args.depth
     exp_cfg.rot_ver = 0
     exp_cfg.feat_ver = 0
-    exp_cfg.use_point_renderer = False
+    exp_cfg.use_point_renderer = True
     exp_cfg.cvx_up = False
     exp_cfg.stage_two = args.mode == "stage-two"
     exp_cfg.stage_two_mvt_resnet = args.mode == "stage-two"
@@ -69,21 +69,25 @@ def build_configs(args):
     return exp_cfg, mvt_cfg
 
 
+# def build_model_and_agent(exp_cfg, mvt_cfg, device):
+#     model = MVT(renderer_device=device, **mvt_cfg).to(device)
+#     agent = rvt_agent.RVTAgent(
+#         network=model,
+#         image_resolution=[IMAGE_SIZE, IMAGE_SIZE],
+#         add_lang=mvt_cfg.add_lang,
+#         scene_bounds=SCENE_BOUNDS,
+#         cameras=CAMERAS,
+#         stage_two=exp_cfg.stage_two,
+#         stage_two_mvt_resnet=exp_cfg.stage_two_mvt_resnet,
+#         rot_ver=exp_cfg.rot_ver,
+#         feat_ver=exp_cfg.feat_ver,
+#         **exp_cfg.peract,
+#         **exp_cfg.rvt,
+#     )
+#     return model, agent
 def build_model_and_agent(exp_cfg, mvt_cfg, device):
     model = MVT(renderer_device=device, **mvt_cfg).to(device)
-    agent = rvt_agent.RVTAgent(
-        network=model,
-        image_resolution=[IMAGE_SIZE, IMAGE_SIZE],
-        add_lang=mvt_cfg.add_lang,
-        scene_bounds=SCENE_BOUNDS,
-        cameras=CAMERAS,
-        stage_two=exp_cfg.stage_two,
-        stage_two_mvt_resnet=exp_cfg.stage_two_mvt_resnet,
-        rot_ver=exp_cfg.rot_ver,
-        feat_ver=exp_cfg.feat_ver,
-        **exp_cfg.peract,
-        **exp_cfg.rvt,
-    )
+    agent = None
     return model, agent
 
 
@@ -135,7 +139,8 @@ def main():
         f"mode={args.mode} model={mvt_cfg.model} depth={mvt_cfg.depth} "
         f"stage_two={mvt_cfg.stage_two} "
         f"stage_two_mvt_resnet={mvt_cfg.stage_two_mvt_resnet} "
-        f"agent_stage_two={agent.stage_two}"
+        # f"agent_stage_two={agent.stage_two}"
+        f"agent_stage_two={getattr(agent, 'stage_two', None)}"
     )
 
 

@@ -2,7 +2,7 @@ exp_id: rvt
 tasks: all
 bs: 3 
 num_workers: 4
-epochs: 1 15
+epochs: 15
 sample_distribution_mode: task_uniform
 peract:
   lr: 5e-5 

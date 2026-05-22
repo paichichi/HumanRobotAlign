@@ -11,7 +11,14 @@ import rvt.mvt.utils as mvt_utils
 
 from rvt.mvt.mvt_single import MVT as MVTSingle
 from rvt.mvt.config import get_cfg_defaults
-from rvt.mvt.renderer import BoxRenderer
+# from rvt.mvt.renderer import BoxRenderer
+try:
+    from rvt.mvt.renderer import BoxRenderer
+except ModuleNotFoundError as e:
+    if e.name == "pytorch3d":
+        BoxRenderer = None
+    else:
+        raise
 
 from rvt.mvt.mvt_resnet import *
 
