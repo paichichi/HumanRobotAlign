@@ -39,6 +39,8 @@ def build(exp_cfg_path, mvt_cfg_path, renderer_device):
     mvt_cfg = mvt_cfg_mod.get_cfg_defaults()
     mvt_cfg.merge_from_file(mvt_cfg_path)
     mvt_cfg = apply_exp_overrides_to_mvt_cfg(mvt_cfg, exp_cfg)
+    print(f"Renderer device: {renderer_device}")
+    print(f"MVT config: {mvt_cfg}")
 
     model = MVT(renderer_device=renderer_device, **mvt_cfg)
     return exp_cfg, mvt_cfg, model
@@ -46,7 +48,7 @@ def build(exp_cfg_path, mvt_cfg_path, renderer_device):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--renderer-device", default="cpu")
+    parser.add_argument("--renderer-device", default="cuda:0")
     parser.add_argument("--mvt-cfg-path", default="mvt/configs/rvt2.yaml")
     args = parser.parse_args()
 
