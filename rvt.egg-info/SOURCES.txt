@@ -1,0 +1,11 @@
+README.md
+setup.py
+rvt/config.py
+rvt/eval.py
+rvt/smoke_mvt_resnet_stage_two.py
+rvt/train.py
+rvt.egg-info/PKG-INFO
+rvt.egg-info/SOURCES.txt
+rvt.egg-info/dependency_links.txt
+rvt.egg-info/requires.txt
+rvt.egg-info/top_level.txt

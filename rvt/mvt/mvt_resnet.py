@@ -58,10 +58,12 @@ class MVT_Resnet(nn.Module):
         adapter=[],
         ds_rate=1,
         output_dim=256,
+        pretrain_path=None,
         rot_ver=0,
         feat_ver=0,
         cvx_up=False,
         use_point_renderer=False,
+        no_feat=False,
         **kwargs,
     ):
         """MultiView Transfomer
@@ -134,6 +136,8 @@ class MVT_Resnet(nn.Module):
         self.add_depth = add_depth
         self.pe_fix = pe_fix
         self.attn_dim = attn_dim
+        self.pretrain_path = pretrain_path
+        self.no_feat = no_feat
 
         print(f"MVT Resnet Vars: {vars(self)}")
 

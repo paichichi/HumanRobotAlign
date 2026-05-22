@@ -51,6 +51,32 @@ from rvt.utils.rvt_utils import (
 from rvt.utils.rvt_utils import load_agent as load_agent_state
 
 
+def apply_exp_overrides_to_mvt_cfg(mvt_cfg, exp_cfg):
+    exp_to_mvt = [
+        ("depth", "depth"),
+        ("attn_dim", "attn_dim"),
+        ("ds_rate", "ds_rate"),
+        ("adapter", "adapter"),
+        ("model", "model"),
+        ("output_dim", "output_dim"),
+        ("stage_two", "stage_two"),
+        ("rot_ver", "rot_ver"),
+        ("rot_x_y_aug", "rot_x_y_aug"),
+        ("feat_ver", "feat_ver"),
+        ("use_point_renderer", "use_point_renderer"),
+        ("cvx_up", "cvx_up"),
+        ("pretrain", "pretrain_path"),
+    ]
+    mvt_cfg.defrost()
+    for exp_key, mvt_key in exp_to_mvt:
+        if hasattr(exp_cfg, exp_key):
+            value = getattr(exp_cfg, exp_key)
+            if value is not None:
+                mvt_cfg[mvt_key] = value
+    mvt_cfg.freeze()
+    return mvt_cfg
+
+
 def load_agent(
     model_path=None,
     peract_official=False,
@@ -135,15 +161,7 @@ def load_agent(
             else:
                 mvt_cfg.merge_from_file(os.path.join(model_folder, "mvt_cfg.yaml"))
 
-            mvt_cfg.freeze()
-
-            mvt_cfg['depth']=exp_cfg.depth
-            mvt_cfg['attn_dim']=exp_cfg.attn_dim
-
-            mvt_cfg['ds_rate']=exp_cfg.ds_rate
-            mvt_cfg['adapter']=exp_cfg.adapter
-            mvt_cfg['model']=exp_cfg.model
-            mvt_cfg['output_dim']=exp_cfg.output_dim
+            mvt_cfg = apply_exp_overrides_to_mvt_cfg(mvt_cfg, exp_cfg)
             
             rvt = MVT(
                 renderer_device=device,
@@ -157,6 +175,9 @@ def load_agent(
                 scene_bounds=SCENE_BOUNDS,
                 cameras=CAMERAS,
                 log_dir=f"{eval_log_dir}/eval_run",
+                stage_two=mvt_cfg.stage_two,
+                rot_ver=mvt_cfg.rot_ver,
+                rot_x_y_aug=mvt_cfg.rot_x_y_aug,
                 **exp_cfg.peract,
                 **exp_cfg.rvt,
             )

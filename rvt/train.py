@@ -262,10 +262,38 @@ def get_tasks(exp_cfg):
 
 
 def get_logdir(cmd_args, exp_cfg):
-    # log_dir = os.path.join(cmd_args.log_dir, exp_cfg.exp_id)
-    log_dir = exp_cfg.overwriter_log_dir
+    if exp_cfg.overwriter_log_dir:
+        log_dir = exp_cfg.overwriter_log_dir
+    else:
+        log_dir = os.path.join(cmd_args.log_dir, exp_cfg.exp_id)
     os.makedirs(log_dir, exist_ok=True)
     return log_dir
+
+
+def apply_exp_overrides_to_mvt_cfg(mvt_cfg, exp_cfg):
+    exp_to_mvt = [
+        ("depth", "depth"),
+        ("attn_dim", "attn_dim"),
+        ("ds_rate", "ds_rate"),
+        ("adapter", "adapter"),
+        ("model", "model"),
+        ("output_dim", "output_dim"),
+        ("stage_two", "stage_two"),
+        ("rot_ver", "rot_ver"),
+        ("rot_x_y_aug", "rot_x_y_aug"),
+        ("feat_ver", "feat_ver"),
+        ("use_point_renderer", "use_point_renderer"),
+        ("cvx_up", "cvx_up"),
+        ("pretrain", "pretrain_path"),
+    ]
+    mvt_cfg.defrost()
+    for exp_key, mvt_key in exp_to_mvt:
+        if hasattr(exp_cfg, exp_key):
+            value = getattr(exp_cfg, exp_key)
+            if value is not None:
+                mvt_cfg[mvt_key] = value
+    mvt_cfg.freeze()
+    return mvt_cfg
 
 
 def dump_log(exp_cfg, mvt_cfg, cmd_args, log_dir):
@@ -357,25 +385,11 @@ def experiment(rank, cmd_args, devices, port):
             mvt_cfg.merge_from_list(cmd_args.mvt_cfg_opts.split(" "))
 
         mvt_cfg.feat_dim = get_num_feat(exp_cfg.peract)
-        mvt_cfg.freeze()
+        mvt_cfg = apply_exp_overrides_to_mvt_cfg(mvt_cfg, exp_cfg)
 
         torch.cuda.set_device(device)
         torch.cuda.empty_cache()
 
-        mvt_cfg['depth']=exp_cfg.depth
-        mvt_cfg['attn_dim']=exp_cfg.attn_dim
-
-        mvt_cfg['ds_rate']=exp_cfg.ds_rate
-        mvt_cfg['adapter']=exp_cfg.adapter 
-        mvt_cfg['model']=exp_cfg.model
-        mvt_cfg['output_dim']=exp_cfg.output_dim
-        mvt_cfg['stage_two']=exp_cfg.stage_two
-        mvt_cfg['stage_two_mvt_resnet']=exp_cfg.stage_two_mvt_resnet
-        mvt_cfg['rot_ver']=exp_cfg.rot_ver
-        mvt_cfg['rot_x_y_aug']=exp_cfg.rot_x_y_aug
-        mvt_cfg['feat_ver']=exp_cfg.feat_ver
-        mvt_cfg['use_point_renderer']=exp_cfg.use_point_renderer
-        mvt_cfg['cvx_up']=exp_cfg.cvx_up
         rvt = MVT(
             renderer_device=device,
             **mvt_cfg,
@@ -394,10 +408,9 @@ def experiment(rank, cmd_args, devices, port):
             cameras=CAMERAS,
             log_dir=f"{log_dir}/test_run/",
             cos_dec_max_step=EPOCHS * TRAINING_ITERATIONS,
-            stage_two=exp_cfg.stage_two,
-            stage_two_mvt_resnet=exp_cfg.stage_two_mvt_resnet,
-            rot_ver=exp_cfg.rot_ver,
-            feat_ver=exp_cfg.feat_ver,
+            stage_two=mvt_cfg.stage_two,
+            rot_ver=mvt_cfg.rot_ver,
+            rot_x_y_aug=mvt_cfg.rot_x_y_aug,
             **exp_cfg.peract,
             **exp_cfg.rvt,
         )

@@ -11,6 +11,7 @@ from torch.cuda.amp import autocast
 import rvt.mvt.utils as mvt_utils
 
 from rvt.mvt.mvt_single import MVT as MVTSingle
+from rvt.mvt.mvt_resnet import MVT_Resnet
 from rvt.mvt.config import get_cfg_defaults
 from rvt.mvt.renderer import BoxRenderer
 
@@ -52,12 +53,18 @@ class MVT(nn.Module):
         cvx_up,
         xops,
         rot_ver,
+        rot_x_y_aug,
         num_rot,
         stage_two,
         st_sca,
         st_wpt_loc_aug,
         st_wpt_loc_inp_no_noise,
         img_aug_2,
+        model="MVTSingle",
+        adapter=[],
+        ds_rate=1.0,
+        output_dim=512,
+        pretrain_path=None,
         renderer_device="cuda:0",
     ):
         """MultiView Transfomer
@@ -95,8 +102,11 @@ class MVT(nn.Module):
         del args["img_aug_2"]
 
         self.rot_ver = rot_ver
+        self.rot_x_y_aug = rot_x_y_aug
         self.num_rot = num_rot
         self.stage_two = stage_two
+        self.model = model
+        self.pretrain_path = pretrain_path
         self.st_sca = st_sca
         self.st_wpt_loc_aug = st_wpt_loc_aug
         self.st_wpt_loc_inp_no_noise = st_wpt_loc_inp_no_noise
@@ -125,17 +135,52 @@ class MVT(nn.Module):
         self.proprio_dim = proprio_dim
         self.img_size = img_size
 
-        # self.mvt1 = MVTSingle(
-        #     **args,
-        #     renderer=self.renderer,
-        #     no_feat=self.stage_two,
-        # )
-        if model=="MVTSingle":
+        if model == "MVTSingle":
+            for key in ("model", "adapter", "ds_rate", "output_dim", "pretrain_path", "rot_x_y_aug"):
+                del args[key]
             self.mvt1 = MVTSingle(**args, renderer=self.renderer, no_feat=self.stage_two,)
-        elif model=="MVT_Resnet":
-            self.mvt1 = MVT_Resnet(**args, renderer=self.renderer, no_feat=self.stage_two,)
+        elif model == "MVT_Resnet":
+            if stage_two:
+                raise NotImplementedError(
+                    "MVT_Resnet does not support stage_two=True yet. "
+                    "Set stage_two: False in the HR-Align exp config."
+                )
+            if rot_ver != 0:
+                raise NotImplementedError(
+                    "MVT_Resnet does not support rot_ver=1 yet because it does "
+                    "not emit feat_x/feat_y/feat_z/feat_ex_rot."
+                )
+            if feat_ver != 0:
+                raise NotImplementedError(
+                    "MVT_Resnet does not support feat_ver=1 yet because it does "
+                    "not implement waypoint-conditioned feature extraction."
+                )
+            if cvx_up:
+                raise NotImplementedError(
+                    "MVT_Resnet does not support cvx_up=True yet. "
+                    "Set cvx_up: False in the HR-Align exp config."
+                )
+            if use_point_renderer:
+                raise NotImplementedError(
+                    "MVT_Resnet does not support use_point_renderer=True yet. "
+                    "Set use_point_renderer: False in the HR-Align exp config."
+                )
+            resnet_args = copy.deepcopy(args)
+            for key in (
+                "model",
+                "norm_corr",
+                "rend_three_views",
+                "wpt_img_aug",
+                "inp_pre_pro",
+                "inp_pre_con",
+                "xops",
+                "num_rot",
+                "rot_x_y_aug",
+            ):
+                del resnet_args[key]
+            self.mvt1 = MVT_Resnet(**resnet_args, renderer=self.renderer, no_feat=False,)
         else:
-            pass
+            raise ValueError(f"Unsupported MVT model: {model}")
         if self.stage_two:
             self.mvt2 = MVTSingle(**args, renderer=self.renderer) 
 

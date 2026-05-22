@@ -7,6 +7,11 @@ from yacs.config import CfgNode as CN
 _C = CN()
 
 _C.depth = 8
+_C.model = "MVTSingle"
+_C.adapter = []
+_C.ds_rate = 1.0
+_C.output_dim = 512
+_C.pretrain_path = None
 _C.img_size = 220
 _C.add_proprio = True
 _C.proprio_dim = 4
@@ -40,6 +45,7 @@ _C.inp_pre_con = True
 _C.cvx_up = False
 _C.xops = False
 _C.rot_ver = 0
+_C.rot_x_y_aug = 2
 _C.num_rot = 72
 _C.stage_two = False
 _C.st_sca = 4
