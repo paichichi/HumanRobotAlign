@@ -68,8 +68,16 @@ def get_dataset(
         # print("---- Preparing the data for {} task ----".format(task), flush=True)
         EPISODES_FOLDER_TRAIN = f"train/{task}/all_variations/episodes"
         EPISODES_FOLDER_VAL = f"val/{task}/all_variations/episodes"
-        data_path_train = os.path.join(DATA_FOLDER, EPISODES_FOLDER_TRAIN)
-        data_path_val = os.path.join(DATA_FOLDER, EPISODES_FOLDER_VAL)
+        data_path_train = (
+            os.path.join(DATA_FOLDER, EPISODES_FOLDER_TRAIN)
+            if DATA_FOLDER is not None
+            else None
+        )
+        data_path_val = (
+            os.path.join(DATA_FOLDER, EPISODES_FOLDER_VAL)
+            if DATA_FOLDER is not None
+            else None
+        )
         train_replay_storage_folder = f"{TRAIN_REPLAY_STORAGE_DIR}/{task}"
         test_replay_storage_folder = f"{TEST_REPLAY_STORAGE_DIR}/{task}"
 

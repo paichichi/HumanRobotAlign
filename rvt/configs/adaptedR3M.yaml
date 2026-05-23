@@ -2,7 +2,7 @@ exp_id: rvt
 tasks: all
 bs: 3 #+3 pre gpu loaded, maxmum bs 24 for rvt2 config 8 gpus loaded
 num_workers: 3
-epochs: 15
+epochs: 5
 sample_distribution_mode: task_uniform
 peract:
   lr: 5e-5
@@ -20,6 +20,8 @@ rvt:
 
 
 depth: 1
+stage_one_depth: 8
+stage_two_depth: 1
 attn_dim: 512
 
 ds_rate: 1.0
@@ -31,9 +33,20 @@ rot_ver: 1
 feat_ver: 1
 cvx_up: True
 
-pretrain: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/pretrains/AdaptedR3M.pyth
-overwriter_log_dir: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/runs/adaptedR3M2RLBench_reproduced_first_try
-train_replay_storage_dir: /home/paichichi/data/rvt/train/replay/replay_train
+pretrain: /home/paichichi/data/pretrain/adaptedR3M.pt #backbone pretrain path, for reference.
+overwriter_log_dir: /home/paichichi/data/HRAlign/runs/UnadaptedR3M2RLBench_rvt2 #log dir, and policy pth location for reference.
+train_replay_storage_dir: /home/paichichi/data/rvt/train/replay/replay_train #replay storage dir, for reference.
+data_folder:  /home/paichichi/data/rvt/train/replay/replay_train/ # raw RLBench demos root; only needed when replay does not exist or using --refresh_repla
+
 num_train: 100
 
 ### python train.py --exp_cfg_path configs/adaptedR3M.yaml --device 0,1,2,3,4,5,6,7
+### python train.py --exp_cfg_path configs/adaptedR3M.yaml --mvt_cfg_path mvt/configs/rvt2.yaml --device 0,1,2,3,4,5,6,7  #unadaptedR3M with rvt2 config, for reference
+
+### LR quick note:
+### train.py uses actual_lr = peract.lr * bs * num_gpus. Current bs=3.
+### To match the stable single-GPU actual lr ~= 1.5e-4:
+###     1 GPU:  peract.lr = 5e-5
+###     2 GPUs: peract.lr = 2.5e-5
+###     4 GPUs: peract.lr = 1.25e-5
+### For full 5-epoch runs: set epochs: 5 and leave train_iterations unset.

@@ -39,7 +39,6 @@ from rvt.utils.peract_utils import (
     CAMERAS,
     SCENE_BOUNDS,
     IMAGE_SIZE,
-    DATA_FOLDER as DEFAULT_DATA_FOLDER,
 )
 
 
@@ -125,12 +124,17 @@ def load_checkpoint(
     checkpoint["model_state"] = normal_to_sub_bn(
         checkpoint["model_state"], model_state_dict_3d
     )
+    if any(k.startswith("mvt2.convnet.") for k in model_state_dict_3d):
+        target_prefixes = ("mvt2.",)
+    else:
+        target_prefixes = ("mvt1.",)
+
     new_dict={}
     for k in checkpoint["model_state"].keys():
         new_k=k
         if "module." in k:
             new_k=new_k[7:]
-        for prefix in ("mvt1.", "mvt2."):
+        for prefix in target_prefixes:
             target_key = prefix + new_k
             if target_key in model_state_dict_3d:
                 new_dict[target_key]=checkpoint["model_state"][k]
@@ -197,9 +201,8 @@ def train(agent, dataset, training_iterations, rank=0):
     data_iter = iter(dataset)
     iter_command = range(training_iterations)
 
-    for iteration in tqdm.tqdm(
-        iter_command, disable=(rank != 0), position=0, leave=True
-    ):
+    pbar = tqdm.tqdm(iter_command, disable=(rank != 0), position=0, leave=True)
+    for iteration in pbar:
 
         raw_batch = next(data_iter)
         batch = {
@@ -221,7 +224,13 @@ def train(agent, dataset, training_iterations, rank=0):
                 "eval_log": False,
             }
         )
-        return_out=agent.update(**update_args)
+        return_out = agent.update(**update_args)
+        if rank == 0 and (iteration + 1) % 100 == 0:
+            pbar.set_postfix(
+                lr=f"{return_out['lr']:.2e}",
+                total=f"{return_out['total_loss']:.2f}",
+                trans=f"{return_out['trans_loss']:.2f}",
+            )
 
     if rank == 0:
         log = print_loss_log(agent)
@@ -270,6 +279,8 @@ def get_logdir(cmd_args, exp_cfg):
 def apply_exp_overrides_to_mvt_cfg(mvt_cfg, exp_cfg):
     exp_to_mvt = [
         ("depth", "depth"),
+        ("stage_one_depth", "stage_one_depth"),
+        ("stage_two_depth", "stage_two_depth"),
         ("attn_dim", "attn_dim"),
         ("ds_rate", "ds_rate"),
         ("adapter", "adapter"),
@@ -345,7 +356,6 @@ def experiment(rank, cmd_args, devices, port):
     # Things to change
     BATCH_SIZE_TRAIN = exp_cfg.bs
     NUM_TRAIN = exp_cfg.num_train if exp_cfg.num_train is not None else 100
-    DATA_FOLDER = exp_cfg.data_folder if exp_cfg.data_folder else DEFAULT_DATA_FOLDER
     if exp_cfg.train_iterations is not None:
         TRAINING_ITERATIONS = exp_cfg.train_iterations
     else:
@@ -364,6 +374,26 @@ def experiment(rank, cmd_args, devices, port):
     )
     log_dir = get_logdir(cmd_args, exp_cfg)
     tasks = get_tasks(exp_cfg)
+    DATA_FOLDER = exp_cfg.data_folder
+    missing_train_replay = [
+        task
+        for task in tasks
+        if not os.path.exists(os.path.join(TRAIN_REPLAY_STORAGE_DIR, task))
+    ]
+    if DATA_FOLDER is None:
+        if cmd_args.refresh_replay or missing_train_replay:
+            missing_msg = ", ".join(missing_train_replay[:5])
+            if len(missing_train_replay) > 5:
+                missing_msg += ", ..."
+            raise ValueError(
+                "data_folder must be set when building replay data. "
+                "Set exp_cfg.data_folder to the RLBench demos root for this server. "
+                f"Missing replay tasks: {missing_msg or 'none'}"
+            )
+        print(
+            "[Info] data_folder is not set; using existing replay only. "
+            f"Replay root: {TRAIN_REPLAY_STORAGE_DIR}"
+        )
     print("Training on {} tasks: {}".format(len(tasks), tasks))
 
     t_start = time.time()

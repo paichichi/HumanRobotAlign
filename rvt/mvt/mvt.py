@@ -60,6 +60,8 @@ class MVT(nn.Module):
         st_wpt_loc_aug,
         st_wpt_loc_inp_no_noise,
         img_aug_2,
+        stage_one_depth=None,
+        stage_two_depth=None,
         model="MVTSingle",
         adapter=[],
         ds_rate=1.0,
@@ -101,6 +103,8 @@ class MVT(nn.Module):
         args = copy.deepcopy(locals())
         del args["self"]
         del args["__class__"]
+        del args["stage_one_depth"]
+        del args["stage_two_depth"]
         del args["stage_two"]
         del args["st_sca"]
         del args["st_wpt_loc_aug"]
@@ -110,6 +114,8 @@ class MVT(nn.Module):
         self.rot_ver = rot_ver
         self.rot_x_y_aug = rot_x_y_aug
         self.num_rot = num_rot
+        self.stage_one_depth = depth if stage_one_depth is None else stage_one_depth
+        self.stage_two_depth = depth if stage_two_depth is None else stage_two_depth
         self.stage_two = stage_two
         self.model = model
         self.pretrain_path = pretrain_path
@@ -144,6 +150,7 @@ class MVT(nn.Module):
         if model == "MVTSingle":
             for key in ("model", "adapter", "ds_rate", "output_dim", "pretrain_path", "rot_x_y_aug"):
                 del args[key]
+            args["depth"] = self.stage_one_depth
             self.mvt1 = MVTSingle(**args, renderer=self.renderer, no_feat=self.stage_two,)
         elif model == "MVT_Resnet":
             resnet_args = copy.deepcopy(args)
@@ -159,13 +166,17 @@ class MVT(nn.Module):
                 mvt1_args = copy.deepcopy(args)
                 for key in ("model", "adapter", "ds_rate", "output_dim", "pretrain_path", "rot_x_y_aug"):
                     del mvt1_args[key]
+                mvt1_args["depth"] = self.stage_one_depth
                 self.mvt1 = MVTSingle(**mvt1_args, renderer=self.renderer, no_feat=True)
+                resnet_args["depth"] = self.stage_two_depth
             else:
+                resnet_args["depth"] = self.stage_one_depth
                 self.mvt1 = MVT_Resnet(**resnet_args, renderer=self.renderer, no_feat=False)
         else:
             raise ValueError(f"Unsupported MVT model: {model}")
         if self.stage_two:
             if model == "MVT_Resnet":
+                resnet_args["depth"] = self.stage_two_depth
                 self.mvt2 = MVT_Resnet(
                     **copy.deepcopy(resnet_args),
                     renderer=self.renderer,
@@ -175,7 +186,14 @@ class MVT(nn.Module):
                 mvt2_args = copy.deepcopy(args)
                 for key in ("model", "adapter", "ds_rate", "output_dim", "pretrain_path", "rot_x_y_aug"):
                     del mvt2_args[key]
+                mvt2_args["depth"] = self.stage_two_depth
                 self.mvt2 = MVTSingle(**mvt2_args, renderer=self.renderer)
+
+        if self.stage_two:
+            print(
+                f"MVT: stage_one_depth={self.stage_one_depth}, "
+                f"stage_two_depth={self.stage_two_depth}, model={model}"
+            )
 
     def get_pt_loc_on_img(self, pt, mvt1_or_mvt2, dyn_cam_info, out=None):
         """
@@ -416,11 +434,13 @@ class MVT(nn.Module):
         )
         with torch.no_grad():
             if self.training and (self.img_aug_2 != 0):
+                aug_img_feat = []
                 for x in img_feat:
                     stdv = self.img_aug_2 * torch.rand(1, device=x.device)
                     # values in [-stdv, stdv]
                     noise = stdv * ((2 * torch.rand(*x.shape, device=x.device)) - 1)
-                    x = x + noise
+                    aug_img_feat.append(torch.clamp(x + noise, -1, 1))
+                img_feat = aug_img_feat
             img = self.render(
                 pc=pc,
                 img_feat=img_feat,

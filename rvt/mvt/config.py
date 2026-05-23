@@ -7,6 +7,8 @@ from yacs.config import CfgNode as CN
 _C = CN()
 
 _C.depth = 8
+_C.stage_one_depth = None
+_C.stage_two_depth = None
 _C.model = "MVTSingle"
 _C.adapter = []
 _C.ds_rate = 1.0

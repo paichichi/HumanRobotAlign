@@ -229,16 +229,13 @@ class MVT_Resnet(nn.Module):
         )
         # inp_pre_out_dim = self.im_channels
 
-        # if self.add_proprio:
-        #     # proprio preprocessing encoder
-        #     self.proprio_preprocess = DenseBlock(
-        #         self.proprio_dim,
-        #         self.im_channels,
-        #         norm="group",
-        #         activation=activation,
-        #     )
-
-        self.add_proprio=False
+        if self.add_proprio:
+            self.proprio_preprocess = DenseBlock(
+                self.proprio_dim,
+                self.attn_dim,
+                norm="group",
+                activation=activation,
+            )
 
         self.patchify = Conv2DBlock(
             self.input_dim_before_seq, #self.custom_input_dim,
@@ -469,13 +466,11 @@ class MVT_Resnet(nn.Module):
         )
         # print(ins.size())
 
-        # # concat proprio
-        # _, _, _d, _h, _w = ins.shape
-        
-        # if self.add_proprio:
-        #     p = self.proprio_preprocess(proprio)  # [B,4] -> [B,64]
-        #     p = p.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1).repeat(1, 1, _d, _h, _w)
-        #     ins = torch.cat([ins, p], dim=1)  # [B, 128, num_img, np, np]
+        if self.add_proprio:
+            assert proprio is not None
+            p = self.proprio_preprocess(proprio)
+            p = p.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)
+            ins = ins + p
 
         # channel last
         ins = rearrange(ins, "b d ... -> b ... d")  # [B, num_img, np, np, 128]
