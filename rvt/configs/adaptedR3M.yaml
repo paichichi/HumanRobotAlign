@@ -36,7 +36,7 @@ cvx_up: True
 pretrain: /home/paichichi/data/pretrain/adaptedR3M.pt #backbone pretrain path, for reference.
 overwriter_log_dir: /home/paichichi/data/HRAlign/runs/UnadaptedR3M2RLBench_rvt2 #log dir, and policy pth location for reference.
 train_replay_storage_dir: /home/paichichi/data/rvt/train/replay/replay_train #replay storage dir, for reference.
-data_folder:  /home/paichichi/data/rvt/train/replay/replay_train/ # raw RLBench demos root; only needed when replay does not exist or using --refresh_repla
+data_folder:   # raw RLBench demos root; only needed when replay does not exist or using --refresh_repla
 
 num_train: 100
 
