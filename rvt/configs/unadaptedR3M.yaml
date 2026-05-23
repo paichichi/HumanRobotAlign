@@ -33,10 +33,10 @@ rot_ver: 1
 feat_ver: 1
 cvx_up: True
 
-pretrain: /home/paichichi/data/pretrain/UnadaptedR3M.pt #backbone pretrain path, for reference.
-overwriter_log_dir: /home/paichichi/data/HRAlign/runs/UnadaptedR3M2RLBench_rvt2 #log dir, and policy pth location for reference.
-train_replay_storage_dir: /home/paichichi/data/rvt/train/replay/replay_train #replay storage dir, for reference.
-data_folder:  /home/paichichi/data/rvt/train/replay/replay_train/ #data folder path if replay storage is not exist, for reference.
+pretrain: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/pretrains/UnadaptedR3M.pt #backbone pretrain path, for reference.
+overwriter_log_dir: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/runs/UnadaptedR3M2RLBench_rvt2 #log dir, and policy pth location for reference.
+train_replay_storage_dir: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/train_data/replay_train #replay storage dir, for reference.
+data_folder:   #data folder path if replay storage is not exist, for reference.
 
 num_train: 100
 
