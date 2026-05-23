@@ -21,6 +21,7 @@ from rvt.mvt.attn import (
     FeedForward,
     FixedPositionalEncoding,
 )
+from rvt.mvt.raft_utils import ConvexUpSample
 
 from .resnet import *
 
@@ -115,8 +116,7 @@ class MVT_Resnet(nn.Module):
             raise NotImplementedError(
                 "MVT_Resnet currently supports only feat_ver=0 or feat_ver=1."
             )
-        if cvx_up:
-            raise NotImplementedError("MVT_Resnet does not support cvx_up=True yet.")
+        self.cvx_up = cvx_up
         self.depth = depth
         self.img_feat_dim = img_feat_dim
         self.img_size = img_size
@@ -153,7 +153,7 @@ class MVT_Resnet(nn.Module):
             f"depth={self.depth}, img_size={self.img_size}, patch={self.img_patch_size}, "
             f"attn_dim={self.attn_dim}, ds_rate={self.ds_rate}, adapter={self.adapter}, "
             f"xops={self.xops}, feat_ver={self.feat_ver}, rot_ver={self.rot_ver}, "
-            f"point_renderer={self.use_point_renderer}, "
+            f"cvx_up={self.cvx_up}, point_renderer={self.use_point_renderer}, "
             f"pretrain={self.pretrain_path}"
         )
         self.convnet = resnet50(pretrained=None, adapter=self.adapter, ds_rate=self.ds_rate)
@@ -294,54 +294,63 @@ class MVT_Resnet(nn.Module):
                 nn.ModuleList([get_attn_attn(**cache_args), get_attn_ff(**cache_args)])
             )
 
-        self.up0 = Conv2DUpsampleBlock(
-            self.input_dim_before_seq,
-            #self.input_dim_before_seq,
-            self.im_channels,
-            kernel_sizes=self.img_patch_size,
-            strides=self.img_patch_size,
-            norm=None,
-            activation=activation,
-            out_size=(spatial_size * self.img_patch_size, spatial_size * self.img_patch_size),
-        )
+        if self.cvx_up:
+            self.up0 = ConvexUpSample(
+                in_dim=self.input_dim_before_seq,
+                out_dim=1,
+                up_ratio=self.img_patch_size,
+            )
+        else:
+            self.up0 = Conv2DUpsampleBlock(
+                self.input_dim_before_seq,
+                self.im_channels,
+                kernel_sizes=self.img_patch_size,
+                strides=self.img_patch_size,
+                norm=None,
+                activation=activation,
+                out_size=(spatial_size * self.img_patch_size, spatial_size * self.img_patch_size),
+            )
 
-        #final_inp_dim = self.im_channels + self.custom_input_dim #inp_pre_out_dim
-        #final_inp_dim = self.input_dim_before_seq + self.custom_input_dim 
-        final_inp_dim = self.im_channels + self.input_dim_before_seq 
-        
-        if self.ds_rate!=1:
-            self.up1 = nn.ConvTranspose2d(
-                in_channels=final_inp_dim, 
-                out_channels=im_channels, 
-                kernel_size=int(1/self.ds_rate)+1, #3, 
-                stride=int(1/self.ds_rate), #2,
-                padding=1, 
-                output_padding=1)
-            final_inp_dim = im_channels
+            #final_inp_dim = self.im_channels + self.custom_input_dim #inp_pre_out_dim
+            #final_inp_dim = self.input_dim_before_seq + self.custom_input_dim 
+            final_inp_dim = self.im_channels + self.input_dim_before_seq 
 
-        # final layers
-        self.final = Conv2DBlock(
-            final_inp_dim,
-            self.im_channels,
-            kernel_sizes=3,
-            strides=1,
-            norm=None,
-            activation=activation,
-        )
+            if self.ds_rate!=1:
+                self.up1 = nn.ConvTranspose2d(
+                    in_channels=final_inp_dim, 
+                    out_channels=im_channels, 
+                    kernel_size=int(1/self.ds_rate)+1, #3, 
+                    stride=int(1/self.ds_rate), #2,
+                    padding=1, 
+                    output_padding=1)
+                final_inp_dim = im_channels
 
-        self.trans_decoder = Conv2DBlock(
-            self.im_channels, #self.final_dim,
-            1,
-            kernel_sizes=3,
-            strides=1,
-            norm=None,
-            activation=None,
-        )
+            # final layers
+            self.final = Conv2DBlock(
+                final_inp_dim,
+                self.im_channels,
+                kernel_sizes=3,
+                strides=1,
+                norm=None,
+                activation=activation,
+            )
+
+            self.trans_decoder = Conv2DBlock(
+                self.im_channels, #self.final_dim,
+                1,
+                kernel_sizes=3,
+                strides=1,
+                norm=None,
+                activation=None,
+            )
 
         feat_out_size = feat_dim
         feat_fc_dim = 0
         feat_fc_dim += self.input_dim_before_seq
-        feat_fc_dim += self.im_channels #self.final_dim
+        if self.cvx_up:
+            feat_fc_dim += self.input_dim_before_seq
+        else:
+            feat_fc_dim += self.im_channels #self.final_dim
 
         def get_feat_fc(_feat_in_size, _feat_out_size, _feat_fc_dim=feat_fc_dim):
             return nn.Sequential(
@@ -552,21 +561,46 @@ class MVT_Resnet(nn.Module):
             )
         )
 
-        u0 = self.up0(x)
-        u0 = torch.cat([u0, d0], dim=1)
-        if self.ds_rate!=1:
-            u0 = self.up1(u0)  ### add to upsample the downsampled resnet feature
+        if self.cvx_up:
+            trans = self.up0(x).view(bs, self.num_img, h, w)
+        else:
+            u0 = self.up0(x)
+            u0 = torch.cat([u0, d0], dim=1)
+            if self.ds_rate!=1:
+                u0 = self.up1(u0)  ### add to upsample the downsampled resnet feature
 
-        u = self.final(u0)
+            u = self.final(u0)
 
-        # translation decoder
-        trans = self.trans_decoder(u).view(bs, self.num_img, h, w)
+            # translation decoder
+            trans = self.trans_decoder(u).view(bs, self.num_img, h, w)
+
+        if self.no_feat:
+            return {"trans": trans, "vis_feat": vis_feat}
 
         if self.feat_ver == 0:
             hm = F.softmax(trans.detach().view(bs, self.num_img, h * w), 2).view(
                 bs * self.num_img, 1, h, w
             )
-            _feat = torch.sum(hm * u, dim=[2, 3])
+            if self.cvx_up:
+                _hm = F.unfold(
+                    hm,
+                    kernel_size=self.img_patch_size,
+                    padding=0,
+                    stride=self.img_patch_size,
+                )
+                assert _hm.shape == (
+                    bs * self.num_img,
+                    self.img_patch_size * self.img_patch_size,
+                    num_pat_img * num_pat_img,
+                )
+                _hm = torch.mean(_hm, 1)
+                _hm = _hm.view(bs * self.num_img, 1, num_pat_img, num_pat_img)
+                _u = x
+            else:
+                _hm = hm
+                _u = u
+
+            _feat = torch.sum(_hm * _u, dim=[2, 3])
             _feat = _feat.view(bs, -1)
         elif self.feat_ver == 1:
             if self.training:
@@ -589,7 +623,17 @@ class MVT_Resnet(nn.Module):
                 )
                 wpt_img = torch.clamp(wpt_img, 0, self.img_size - 1)
 
-            _feat = select_feat_from_hm(wpt_img.unsqueeze(1), u)[0]
+            if self.cvx_up:
+                _wpt_img = wpt_img / self.img_patch_size
+                _u = x
+                assert (
+                    0 <= _wpt_img.min() and _wpt_img.max() <= x.shape[-1]
+                ), print(_wpt_img, x.shape)
+            else:
+                _wpt_img = wpt_img
+                _u = u
+
+            _feat = select_feat_from_hm(_wpt_img.unsqueeze(1), _u)[0]
             _feat = _feat.view(bs, -1)
         else:
             assert False

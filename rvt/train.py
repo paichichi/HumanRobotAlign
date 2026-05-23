@@ -130,8 +130,10 @@ def load_checkpoint(
         new_k=k
         if "module." in k:
             new_k=new_k[7:]
-        new_k="mvt1."+new_k
-        new_dict[new_k]=checkpoint["model_state"][k]
+        for prefix in ("mvt1.", "mvt2."):
+            target_key = prefix + new_k
+            if target_key in model_state_dict_3d:
+                new_dict[target_key]=checkpoint["model_state"][k]
     checkpoint["model_state"]=new_dict
 
     not_used1=0

@@ -1,7 +1,7 @@
 exp_id: rvt
 tasks: all
-bs: 3
-num_workers: 4
+bs: 3 #+3 pre gpu loaded, maxmum bs 24 for rvt2 config 8 gpus loaded
+num_workers: 3
 epochs: 15
 sample_distribution_mode: task_uniform
 peract:
@@ -26,10 +26,10 @@ ds_rate: 1.0
 adapter: ['late.layer.3.k.1.down.4.g.8']
 model: "MVT_Resnet" 
 output_dim: 512
-stage_two: False
+stage_two: True
 rot_ver: 1
 feat_ver: 1
-cvx_up: False
+cvx_up: True
 
 pretrain: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/pretrains/AdaptedR3M.pyth
 overwriter_log_dir: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/runs/adaptedR3M2RLBench_reproduced_first_try

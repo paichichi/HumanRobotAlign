@@ -146,16 +146,6 @@ class MVT(nn.Module):
                 del args[key]
             self.mvt1 = MVTSingle(**args, renderer=self.renderer, no_feat=self.stage_two,)
         elif model == "MVT_Resnet":
-            if stage_two:
-                raise NotImplementedError(
-                    "MVT_Resnet does not support stage_two=True yet. "
-                    "Set stage_two: False in the HR-Align exp config."
-                )
-            if cvx_up:
-                raise NotImplementedError(
-                    "MVT_Resnet does not support cvx_up=True yet. "
-                    "Set cvx_up: False in the HR-Align exp config."
-                )
             resnet_args = copy.deepcopy(args)
             for key in (
                 "model",
@@ -165,11 +155,27 @@ class MVT(nn.Module):
                 "rot_x_y_aug",
             ):
                 del resnet_args[key]
-            self.mvt1 = MVT_Resnet(**resnet_args, renderer=self.renderer, no_feat=False,)
+            if self.stage_two:
+                mvt1_args = copy.deepcopy(args)
+                for key in ("model", "adapter", "ds_rate", "output_dim", "pretrain_path", "rot_x_y_aug"):
+                    del mvt1_args[key]
+                self.mvt1 = MVTSingle(**mvt1_args, renderer=self.renderer, no_feat=True)
+            else:
+                self.mvt1 = MVT_Resnet(**resnet_args, renderer=self.renderer, no_feat=False)
         else:
             raise ValueError(f"Unsupported MVT model: {model}")
         if self.stage_two:
-            self.mvt2 = MVTSingle(**args, renderer=self.renderer) 
+            if model == "MVT_Resnet":
+                self.mvt2 = MVT_Resnet(
+                    **copy.deepcopy(resnet_args),
+                    renderer=self.renderer,
+                    no_feat=False,
+                )
+            else:
+                mvt2_args = copy.deepcopy(args)
+                for key in ("model", "adapter", "ds_rate", "output_dim", "pretrain_path", "rot_x_y_aug"):
+                    del mvt2_args[key]
+                self.mvt2 = MVTSingle(**mvt2_args, renderer=self.renderer)
 
     def get_pt_loc_on_img(self, pt, mvt1_or_mvt2, dyn_cam_info, out=None):
         """
