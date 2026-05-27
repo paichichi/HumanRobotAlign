@@ -237,25 +237,23 @@ def train(agent, dataset, training_iterations, rank=0):
 
     return log
 
-def save_agent(agent, path, epoch):
+def save_agent(agent, path, epoch, include_optimizer=True):
     model = agent._network
-    optimizer = agent._optimizer
-    lr_sched = agent._lr_sched
 
     if isinstance(model, DDP):
         model_state = model.module.state_dict()
     else:
         model_state = model.state_dict()
 
-    torch.save(
-        {
-            "epoch": epoch,
-            "model_state": model_state,
-            "optimizer_state": optimizer.state_dict(),
-            "lr_sched_state": lr_sched.state_dict(),
-        },
-        path,
-    )
+    checkpoint = {
+        "epoch": epoch,
+        "model_state": model_state,
+    }
+    if include_optimizer:
+        checkpoint["optimizer_state"] = agent._optimizer.state_dict()
+        checkpoint["lr_sched_state"] = agent._lr_sched.state_dict()
+
+    torch.save(checkpoint, path)
 
 
 def get_tasks(exp_cfg):
@@ -493,9 +491,8 @@ def experiment(rank, cmd_args, devices, port):
             tb.update("train", i, out)
 
         if rank == 0:
-            # TODO: add logic to only save some models
-            save_agent(agent, f"{log_dir}/model_{i}.pth", i)
-            save_agent(agent, f"{log_dir}/model_last.pth", i)
+            save_agent(agent, f"{log_dir}/model_{i}.pth", i, include_optimizer=False)
+            save_agent(agent, f"{log_dir}/model_last.pth", i, include_optimizer=True)
         i += 1
 
     if rank == 0:

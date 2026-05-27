@@ -250,7 +250,7 @@ RLBENCH_TASKS = [
 ]
 
 
-def load_agent(agent_path, agent=None, only_epoch=False):
+def load_agent(agent_path, agent=None, only_epoch=False, load_optimizer=True):
     if isinstance(agent, PreprocessAgent2):
         assert not only_epoch
         agent._pose_agent.load_weights(agent_path)
@@ -286,18 +286,21 @@ def load_agent(agent_path, agent=None, only_epoch=False):
                 )
                 model.load_state_dict(checkpoint["model_state"], strict=False)
 
-        if "optimizer_state" in checkpoint:
-            optimizer.load_state_dict(checkpoint["optimizer_state"])
-        else:
-            print(
-                "WARNING: No optimizer_state in checkpoint" "KNOW WHAT YOU ARE DOING!!"
-            )
+        if load_optimizer:
+            if "optimizer_state" in checkpoint:
+                optimizer.load_state_dict(checkpoint["optimizer_state"])
+            else:
+                print(
+                    "WARNING: No optimizer_state in checkpoint"
+                    "KNOW WHAT YOU ARE DOING!!"
+                )
 
-        if "lr_sched_state" in checkpoint:
-            lr_sched.load_state_dict(checkpoint["lr_sched_state"])
-        else:
-            print(
-                "WARNING: No lr_sched_state in checkpoint" "KNOW WHAT YOU ARE DOING!!"
-            )
+            if "lr_sched_state" in checkpoint:
+                lr_sched.load_state_dict(checkpoint["lr_sched_state"])
+            else:
+                print(
+                    "WARNING: No lr_sched_state in checkpoint"
+                    "KNOW WHAT YOU ARE DOING!!"
+                )
 
     return epoch

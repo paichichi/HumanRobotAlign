@@ -60,6 +60,8 @@ def apply_exp_overrides_to_mvt_cfg(mvt_cfg, exp_cfg):
         ("model", "model"),
         ("output_dim", "output_dim"),
         ("stage_two", "stage_two"),
+        ("stage_one_depth", "stage_one_depth"),
+        ("stage_two_depth", "stage_two_depth"),
         ("rot_ver", "rot_ver"),
         ("rot_x_y_aug", "rot_x_y_aug"),
         ("feat_ver", "feat_ver"),
@@ -185,7 +187,7 @@ def load_agent(
             raise NotImplementedError
 
         agent.build(training=False, device=device)
-        load_agent_state(model_path, agent)
+        load_agent_state(model_path, agent, load_optimizer=False)
         agent.eval()
 
     elif peract_official:  # load official peract model, using the provided code
@@ -429,10 +431,14 @@ def get_model_index(filename):
     :return: idx or None
     """
     if len(filename) >= 9 and filename[-4:] == ".pth":
-        try:
-            index = int(filename[:-4].split("_")[-1])
-        except:
-            index = None
+        stem = os.path.basename(filename[:-4])
+        index = None
+        for part in reversed(stem.split("_")):
+            try:
+                index = int(part)
+                break
+            except ValueError:
+                continue
     else:
         index = None
     return index
