@@ -1,11 +1,11 @@
 exp_id: rvt
 tasks: all
-bs: 3
+bs: 6
 num_workers: 3
-epochs: 5
+epochs: 15
 sample_distribution_mode: task_uniform
 peract:
-  lr: 5e-5
+  lr: 1.25e-5
   warmup_steps: 2000
   optimizer_type: lamb
   lr_cos_dec: True
@@ -31,8 +31,8 @@ rot_ver: 1
 feat_ver: 1
 cvx_up: True
 
-pretrain: /home/paichichi/data/pretrain/D4R_IN_1M.pth
-overwriter_log_dir: /home/paichichi/data/HRAlign/runs/D4R_IN_rvt2
-train_replay_storage_dir: /home/paichichi/data/rvt/train/replay/replay_train
+pretrain: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/pretrains/D4R_IN_1M.pth #backbone pretrain path, for reference.
+overwriter_log_dir: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/runs/D4R_ImageNet_rvt2_bs6_lr1.25e-5 #log dir, and policy pth location for reference.
+train_replay_storage_dir: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/train_data/replay_train
 data_folder:
 num_train: 100
