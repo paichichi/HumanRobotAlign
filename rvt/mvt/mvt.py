@@ -12,6 +12,7 @@ import rvt.mvt.utils as mvt_utils
 
 from rvt.mvt.mvt_single import MVT as MVTSingle
 from rvt.mvt.mvt_resnet import MVT_Resnet
+from rvt.mvt.mvt_vit import MVT_ViT
 from rvt.mvt.config import get_cfg_defaults
 from rvt.mvt.renderer import BoxRenderer
 
@@ -152,7 +153,7 @@ class MVT(nn.Module):
                 del args[key]
             args["depth"] = self.stage_one_depth
             self.mvt1 = MVTSingle(**args, renderer=self.renderer, no_feat=self.stage_two,)
-        elif model == "MVT_Resnet":
+        elif model in ("MVT_Resnet", "MVT_ViT"):
             resnet_args = copy.deepcopy(args)
             for key in (
                 "model",
@@ -162,6 +163,7 @@ class MVT(nn.Module):
                 "rot_x_y_aug",
             ):
                 del resnet_args[key]
+            stage_two_cls = MVT_Resnet if model == "MVT_Resnet" else MVT_ViT
             if self.stage_two:
                 mvt1_args = copy.deepcopy(args)
                 for key in ("model", "adapter", "ds_rate", "output_dim", "pretrain_path", "rot_x_y_aug"):
@@ -171,13 +173,13 @@ class MVT(nn.Module):
                 resnet_args["depth"] = self.stage_two_depth
             else:
                 resnet_args["depth"] = self.stage_one_depth
-                self.mvt1 = MVT_Resnet(**resnet_args, renderer=self.renderer, no_feat=False)
+                self.mvt1 = stage_two_cls(**resnet_args, renderer=self.renderer, no_feat=False)
         else:
             raise ValueError(f"Unsupported MVT model: {model}")
         if self.stage_two:
-            if model == "MVT_Resnet":
+            if model in ("MVT_Resnet", "MVT_ViT"):
                 resnet_args["depth"] = self.stage_two_depth
-                self.mvt2 = MVT_Resnet(
+                self.mvt2 = stage_two_cls(
                     **copy.deepcopy(resnet_args),
                     renderer=self.renderer,
                     no_feat=False,

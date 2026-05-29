@@ -434,7 +434,7 @@ def experiment(rank, cmd_args, devices, port):
         if ddp:
             rvt = DDP(rvt, device_ids=[device], find_unused_parameters=True)
         
-        if exp_cfg.pretrain is not None:
+        if exp_cfg.pretrain is not None and mvt_cfg.model == "MVT_Resnet":
             load_checkpoint(exp_cfg.pretrain, rvt, ddp)
         
         agent = rvt_agent.RVTAgent(
