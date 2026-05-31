@@ -1,25 +1,45 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd /home/paichichi/projects/HumanRobotAlign/rvt
+# ============================================================
+# 1. Load environment
+# ============================================================
 
-MODEL_FOLDER="runs/UnadaptedR3M_rvt2_bs6_lr1.25e-5"
-MODEL_NAME="model_4_eval.pth"
-DATA_ROOT="/home/paichichi/data/AGNOSTOS/unseen_tasks/test"
+source /home/xli990/paichichi/GitHub/hralign_eval_bundle/activate_eval_env.sh
+
+export PROJECT_ROOT=/home/xli990/paichichi/GitHub/hralign_eval_bundle
+export RVT_ROOT="${PROJECT_ROOT}/rvt"
+export PYTHONPATH="${PROJECT_ROOT}:${PYTHONPATH:-}"
+
+export PATH=/home/xli990/bin:${CONDA_PREFIX}/bin:${PATH}
+
+export COPPELIASIM_ROOT=/home/xli990/software/CoppeliaSim
+export QT_QPA_PLATFORM_PLUGIN_PATH="${COPPELIASIM_ROOT}"
+unset QT_QPA_PLATFORM
+unset QT_PLUGIN_PATH
+
+cd "${RVT_ROOT}"
+
+# ============================================================
+# 2. Basic config
+# ============================================================
+
+MODEL_NAME="model_14.pth"
+
+DATA_ROOT="/home/xli990/paichichi/GitHub/X-ICM/data/unseen_tasks/test"
 
 EPISODES=25
 EPISODE_LENGTH=25
 GPU_ID=0
 RUNS=(1 2 3)
 
-RUN_NAME="UnadaptedR3M_rvt2_bs6_lr1.25e-5"
-LOG_ROOT="logs/${RUN_NAME}"
-
-export COPPELIASIM_ROOT=/home/paichichi/software/CoppeliaSim_4_1_0
-export LD_LIBRARY_PATH=$COPPELIASIM_ROOT:$COPPELIASIM_ROOT/lib:${LD_LIBRARY_PATH:-}
-export QT_QPA_PLATFORM_PLUGIN_PATH=$COPPELIASIM_ROOT
-export QT_PLUGIN_PATH=$COPPELIASIM_ROOT
-export QT_QPA_PLATFORM=xcb
+EXPERIMENTS=(
+  "D4R_100days_of_hands_rvt2_bs6_lr1.25e-5"
+  "D4R_ImageNet_rvt2_bs6_lr1.25e-5"
+  "D4R_Kinetics_rvt2_bs6_lr1.25e-5"
+  "D4R_SOUP_rvt2_bs6_lr1.25e-5"
+  "HRP_Ego4D_rvt2_bs6_lr1.25e-5"
+)
 
 tasks=(
   "put_toilet_roll_on_stand"
@@ -47,76 +67,62 @@ tasks=(
   "unplug_charger"
 )
 
-mkdir -p "$LOG_ROOT"
+# ============================================================
+# 3. Run rollouts
+# ============================================================
 
-cat > "${LOG_ROOT}/config.yaml" <<EOF
-run_name: ${RUN_NAME}
-model_folder: ${MODEL_FOLDER}
-model_name: ${MODEL_NAME}
-data_root: ${DATA_ROOT}
-episodes: ${EPISODES}
-episode_length: ${EPISODE_LENGTH}
-gpu_id: ${GPU_ID}
-tasks:
-$(printf "  - %s\n" "${tasks[@]}")
-EOF
+for exp_name in "${EXPERIMENTS[@]}"; do
+  MODEL_FOLDER="runs/${exp_name}"
 
-for task in "${tasks[@]}"; do
-  for run_id in "${RUNS[@]}"; do
-    RUN_DIR="${LOG_ROOT}/${task}/run${run_id}"
-    mkdir -p "$RUN_DIR"
+  # logs/hralign_eval/${RUN_NAME}/...
+  RUN_NAME="${exp_name}_${MODEL_NAME%.pth}"
+  LOG_ROOT="logs/hralign_eval/${RUN_NAME}"
 
-    STDOUT_LOG="${RUN_DIR}/stdout.log"
-    EPISODE_CSV="${RUN_DIR}/episodes.csv"
-    SUMMARY_CSV="${RUN_DIR}/summary.csv"
-    LOG_NAME="${RUN_NAME}_${task}_run${run_id}"
+  echo "============================================================"
+  echo "Experiment: ${exp_name}"
+  echo "Model folder: ${MODEL_FOLDER}"
+  echo "Model name: ${MODEL_NAME}"
+  echo "Log root: ${LOG_ROOT}"
+  echo "============================================================"
 
-    echo "Evaluating ${task}, run ${run_id}"
+  for task in "${tasks[@]}"; do
+    for run_id in "${RUNS[@]}"; do
+      RUN_DIR="${LOG_ROOT}/${task}/run${run_id}"
+      mkdir -p "${RUN_DIR}"
 
-    CUDA_VISIBLE_DEVICES="$GPU_ID" python -X faulthandler -u eval.py \
-      --model-folder "$MODEL_FOLDER" \
-      --eval-datafolder "$DATA_ROOT" \
-      --tasks "$task" \
-      --eval-episodes "$EPISODES" \
-      --episode-length "$EPISODE_LENGTH" \
-      --log-name "$LOG_NAME" \
-      --device 0 \
-      --headless \
-      --model-name "$MODEL_NAME" \
-      2>&1 | tee "$STDOUT_LOG"
+      STDOUT_LOG="${RUN_DIR}/stdout.log"
+      XVFB_LOG="${RUN_DIR}/xvfb.log"
+      LOG_NAME="${RUN_NAME}_${task}_run${run_id}"
 
-    SRC_SUMMARY="${MODEL_FOLDER}/eval/${LOG_NAME}/${MODEL_NAME%.pth}/eval_results.csv"
-    [[ -f "$SRC_SUMMARY" ]] && cp "$SRC_SUMMARY" "$SUMMARY_CSV"
+      echo "------------------------------------------------------------"
+      echo "Task: ${task}"
+      echo "Run: ${run_id}"
+      echo "Log: ${STDOUT_LOG}"
+      echo "------------------------------------------------------------"
 
-    python - "$STDOUT_LOG" "$EPISODE_CSV" <<'PY'
-import csv
-import re
-import sys
+      unset QT_QPA_PLATFORM
+      unset QT_PLUGIN_PATH
+      export QT_QPA_PLATFORM_PLUGIN_PATH="${COPPELIASIM_ROOT}"
 
-pattern = re.compile(
-    r"^Evaluating (?P<task>.*?) \| Episode (?P<episode>\d+) \| "
-    r"Score: (?P<score>.*?) \| Episode Length: (?P<episode_length>\d+) \| "
-    r"Lang Goal: (?P<lang_goal>.*)$"
-)
+      CUDA_VISIBLE_DEVICES="${GPU_ID}" xvfb-run -a \
+        -e "${XVFB_LOG}" \
+        -s "-screen 0 1024x768x24 +extension GLX +render -noreset" \
+        python -X faulthandler -u eval.py \
+          --model-folder "${MODEL_FOLDER}" \
+          --eval-datafolder "${DATA_ROOT}" \
+          --tasks "${task}" \
+          --eval-episodes "${EPISODES}" \
+          --episode-length "${EPISODE_LENGTH}" \
+          --log-name "${LOG_NAME}" \
+          --device 0 \
+          --headless \
+          --model-name "${MODEL_NAME}" \
+        2>&1 | tee "${STDOUT_LOG}"
 
-rows = []
-with open(sys.argv[1], "r", errors="ignore") as f:
-    for line in f:
-        match = pattern.match(line.strip())
-        if match:
-            row = match.groupdict()
-            row["message"] = line.strip()
-            rows.append(row)
-
-with open(sys.argv[2], "w", newline="") as f:
-    writer = csv.DictWriter(
-        f,
-        fieldnames=["task", "episode", "score", "episode_length", "lang_goal", "message"],
-    )
-    writer.writeheader()
-    writer.writerows(rows)
-PY
+    done
   done
+
+  echo "Finished: ${RUN_NAME}"
 done
 
-echo "All done. Logs saved to: ${LOG_ROOT}"
+echo "All done. Logs saved under logs/hralign_eval/"

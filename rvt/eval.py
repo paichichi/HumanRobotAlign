@@ -165,6 +165,13 @@ def load_agent(
 
             mvt_cfg = apply_exp_overrides_to_mvt_cfg(mvt_cfg, exp_cfg)
             
+            # Rollout/eval only needs the trained RVT checkpoint.
+            # Do not load the original D4R/HRP backbone pretrain here.
+            # The full weights will be restored by load_agent_state(model_path, agent, ...).
+            mvt_cfg.defrost()
+            mvt_cfg.pretrain_path = None
+            mvt_cfg.freeze()
+            
             rvt = MVT(
                 renderer_device=device,
                 **mvt_cfg,
