@@ -1,11 +1,11 @@
 exp_id: rvt
 tasks: all
-bs: 3 #+3 pre gpu loaded, maxmum bs 24 for rvt2 config 8 gpus loaded
+bs: 6 #+3 pre gpu loaded, maxmum bs 24 for rvt2 config 8 gpus loaded
 num_workers: 3
 epochs: 5
 sample_distribution_mode: task_uniform
 peract:
-  lr: 5e-5
+  lr: 1.25e-5
   warmup_steps: 2000
   optimizer_type: lamb
   lr_cos_dec: True
@@ -33,10 +33,10 @@ rot_ver: 1
 feat_ver: 1
 cvx_up: True
 
-pretrain: /home/paichichi/data/pretrain/adaptedR3M.pt #backbone pretrain path, for reference.
-overwriter_log_dir: /home/paichichi/data/HRAlign/runs/UnadaptedR3M2RLBench_rvt2 #log dir, and policy pth location for reference.
-train_replay_storage_dir: /home/paichichi/data/rvt/train/replay/replay_train #replay storage dir, for reference.
-data_folder:   # raw RLBench demos root; only needed when replay does not exist or using --refresh_repla
+pretrain: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/pretrains/AdaptedR3M.pyth #backbone pretrain path, for reference.
+overwriter_log_dir: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/runs/AdaptedR3M2RLBench_rvt2_bs6_lr1.25e-5 #log dir, and policy pth location for reference.
+train_replay_storage_dir: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/train_data/replay_train #replay storage dir, for reference.
+data_folder:   #data folder path if replay storage is not exist, for reference.
 
 num_train: 100
 
