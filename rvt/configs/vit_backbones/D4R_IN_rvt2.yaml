@@ -31,8 +31,9 @@ rot_ver: 1
 feat_ver: 1
 cvx_up: True
 
-pretrain: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/pretrains/D4R_IN_1M.pth #backbone pretrain path, for reference.
-overwriter_log_dir: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/runs/D4R_ImageNet_rvt2_bs6_lr1.25e-5 #log dir, and policy pth location for reference.
+# pretrain: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/pretrains/D4R_IN_1M.pth #backbone pretrain path, for reference.
+pretrain: /nesi/nobackup/uoa04758/xzha593/datasets//RH20T/runs/train_2a100_d4r_8ts3v_lr7p5e5_20k/checkpoint_020000.pt #backbone pretrain path, for reference.
+overwriter_log_dir: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/runs/INFONC_SOF_DTW_ImageNet_rvt2_bs6_lr1.25e-5 #log dir, and policy pth location for reference.
 train_replay_storage_dir: /nesi/nobackup/uoa04758/xzha593/datasets/HRAlign/train_data/replay_train
 data_folder:
 num_train: 100
