@@ -25,13 +25,40 @@ from rvt.mvt.raft_utils import ConvexUpSample
 from torchvision.models import vit_b_16
 
 
+def _load_checkpoint_file(checkpoint_path):
+    try:
+        return torch.load(checkpoint_path, map_location="cpu")
+    except Exception as exc:
+        if "Weights only load failed" not in str(exc):
+            raise
+        return torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+
+
 def _unwrap_state_dict(checkpoint):
     if isinstance(checkpoint, dict) and isinstance(checkpoint.get("model"), dict):
         return checkpoint["model"]
+    if isinstance(checkpoint, dict) and isinstance(checkpoint.get("state_dict"), dict):
+        return checkpoint["state_dict"]
+    if isinstance(checkpoint, dict) and isinstance(checkpoint.get("model_state"), dict):
+        return checkpoint["model_state"]
     return checkpoint
 
 
+def _strip_known_prefixes(key):
+    prefixes = (
+        "module.backbone.model.",
+        "backbone.model.",
+        "module.model.",
+        "model.",
+    )
+    for prefix in prefixes:
+        if key.startswith(prefix):
+            return key[len(prefix):]
+    return key
+
+
 def _mae_to_torchvision_key(key):
+    key = _strip_known_prefixes(key)
     if key == "cls_token":
         return "class_token"
     if key == "pos_embed":
@@ -95,13 +122,14 @@ class ViTB16Backbone(nn.Module):
             param.requires_grad = False
 
     def load_pretrained(self, checkpoint_path):
-        checkpoint = torch.load(checkpoint_path, map_location="cpu")
+        checkpoint = _load_checkpoint_file(checkpoint_path)
         source_state = _unwrap_state_dict(checkpoint)
         target_state = self.model.state_dict()
         mapped_state = {}
         skipped = []
         for key, value in source_state.items():
-            mapped_key = _mae_to_torchvision_key(key)
+            stripped_key = _strip_known_prefixes(key)
+            mapped_key = stripped_key if stripped_key in target_state else _mae_to_torchvision_key(key)
             if mapped_key is None:
                 skipped.append(key)
                 continue
@@ -120,6 +148,11 @@ class ViTB16Backbone(nn.Module):
             print(f"ViTB16Backbone missing (first 20): {missing[:20]}")
         if skipped:
             print(f"ViTB16Backbone skipped source keys (first 20): {skipped[:20]}")
+        if not mapped_state:
+            raise ValueError(
+                f"No ViT backbone tensors were loaded from {checkpoint_path}. "
+                "Check checkpoint key format."
+            )
 
     def train(self, mode=True):
         super().train(False)
