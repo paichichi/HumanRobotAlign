@@ -5,7 +5,7 @@
 #SBATCH --gres=gpu:a100:2
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=32G
+#SBATCH --mem=24G
 #SBATCH --time=18:00:00
 #SBATCH --output=/nesi/project/uoa04758/xzha593/logs/RH20T/rvt/%x-%j.out
 #SBATCH --error=/nesi/project/uoa04758/xzha593/logs/RH20T/rvt/%x-%j.err
